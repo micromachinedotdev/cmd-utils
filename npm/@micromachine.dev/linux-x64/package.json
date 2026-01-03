@@ -1,6 +1,6 @@
 {
   "name": "@micromachine.dev/cli-linux-x64",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The Linux 64-bit binary for micromachine.dev, a JavaScript bundler.",
   "repository": {
     "type": "git",
