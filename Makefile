@@ -39,7 +39,7 @@ build-windows-arm64:
 build-windows-x64:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-x64/$(BINARY).exe ./main.go
 
-npm-publish: build-all
+npm-publish:
 	@echo "Publishing version $(VERSION)"
 	cd npm/$(APP_PREFIX)/darwin-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/darwin-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
