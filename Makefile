@@ -33,10 +33,10 @@ build-linux-x64:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/linux-x64/bin/$(BINARY) ./main.go
 
 build-win32-arm64:
-	GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-arm64/$(BINARY).exe ./main.go
+	GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-arm64/bin/$(BINARY).exe ./main.go
 
 build-win32-x64:
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-x64/$(BINARY).exe ./main.go
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-x64/bin/$(BINARY).exe ./main.go
 
 npm-publish:
 	@echo "Publishing version $(VERSION)"
