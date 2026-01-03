@@ -21,17 +21,17 @@ jobs:
       with:
         go-version: '1.25.4'
 
-    - name: Install
-      run: make deps
-
-    - name: Build
-      run: make build-all
-
     - name: Setup Node.js environment
       uses: actions/setup-node@v6.1.0
       with:
         node-version: '25.1.0'
         registry-url: 'https://registry.npmjs.org'
+
+    - name: Install
+      run: make deps
+
+    - name: Build
+      run: make build-all
         
     - name: Publish
       run: make npm-publish
