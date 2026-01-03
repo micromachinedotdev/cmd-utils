@@ -1,6 +1,6 @@
 {
   "name": "@micromachine.dev/cli-linux-arm",
-  "version": "0.27.2",
+  "version": "0.1.1",
   "description": "The Linux ARM binary for micromachine.dev.",
   "repository": {
     "type": "git",
