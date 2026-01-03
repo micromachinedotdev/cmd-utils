@@ -1,7 +1,7 @@
 # Variables
 APP_PREFIX := @micromachine.dev
 BINARY := micromachine
-VERSION := $(shell git describe --tags --abbrev=0 | sed 's/^v//')
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD)
 LDFLAGS := -s -w -X main.Version=$(VERSION) -X main.Commit=$(COMMIT)
 
