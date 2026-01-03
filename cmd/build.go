@@ -15,13 +15,13 @@ var buildScript string
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
 	Use:   "build",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Bundles the code for deployment",
+	Long: `The build command automates the preparation of your application for deployment. 
+It performs the following steps:
+1. Detects the project's package manager (Bun, PNPM, or Yarn).
+2. Locates and parses the wrangler configuration file (toml, json, or jsonc).
+3. Executes the specified build script.
+4. Bundles the resulting assets and entrypoints into a deployable package.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		packageManager, err := lib.DetectPackageManager(&rootDir)
 

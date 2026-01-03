@@ -1,0 +1,20 @@
+{
+  "name": "@micromachine.dev/cli-linux-x64",
+  "version": "0.27.2",
+  "description": "The Linux 64-bit binary for micromachine.dev, a JavaScript bundler.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/micromachinedotdev/cmd-utils.git"
+  },
+  "license": "MIT",
+  "preferUnplugged": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}

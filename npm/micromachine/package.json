@@ -1,0 +1,25 @@
+{
+  "name": "micromachine",
+  "version": "0.1.0",
+  "repository": "https://github.com/micromachine/cmd-utils",
+  "bugs": "https://github.com/micromachine/cmd-utils/issues",
+  "homepage": "https://micromachine.dev",
+  "license": "MIT",
+  "main": "bin/micromachine.js",
+  "bin": {
+    "micromachine": "bin/micromachine.js"
+  },
+  "files": [
+    "bin",
+    "schema.json"
+  ],
+  "optionalDependencies": {
+    "@micromachine.dev/cli-darwin-x64": "0.1.0",
+    "@micromachine.dev/cli-darwin-arm64": "0.1.0",
+    "@micromachine.dev/cli-linux-x64": "0.1.0",
+    "@micromachine.dev/cli-linux-arm": "0.1.0",
+    "@micromachine.dev/cli-linux-arm64": "0.1.0",
+    "@micromachine.dev/cli-windows-x64": "0.1.0",
+    "@micromachine.dev/cli-windows-arm64": "0.1.0"
+  }
+}

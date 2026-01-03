@@ -13,13 +13,9 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "micromachine",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: `Build and deploy cloud-native applications`,
+	Long: `Micromachine is a powerful CLI tool designed to streamline the bundling, and deployment of modern web applications. It provides automated 
+package manager detection, asset bundling, and integration with wrangler configurations.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
