@@ -46,5 +46,6 @@ npm-publish:
 	cd npm/$(APP_PREFIX)/linux-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/linux-arm && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/linux-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/windows-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+	cd npm/$(APP_PREFIX)/win32-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+	cd npm/$(APP_PREFIX)/win32-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(BINARY) && npm version $(VERSION) --no-git-tag-version && npm publish --access public
