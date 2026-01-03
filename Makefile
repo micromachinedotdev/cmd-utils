@@ -40,10 +40,10 @@ build-win32-x64:
 
 npm-publish:
 	@echo "Publishing version $(VERSION)"
-	cd npm/$(APP_PREFIX)/darwin-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/darwin-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/linux-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/linux-arm && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+#	cd npm/$(APP_PREFIX)/darwin-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+#	cd npm/$(APP_PREFIX)/darwin-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+#	cd npm/$(APP_PREFIX)/linux-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+#	cd npm/$(APP_PREFIX)/linux-arm && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/linux-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/win32-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
 	cd npm/$(APP_PREFIX)/win32-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
