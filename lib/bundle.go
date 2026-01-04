@@ -52,7 +52,7 @@ func (b *Bundle) Pack() {
 			Write:       true,
 			Splitting:   false,
 			LogLevel:    api.LogLevelInfo,
-			Format:      api.FormatESModule,
+			Format:      api.FormatDefault,
 			Platform:    api.PlatformNeutral,
 			TreeShaking: api.TreeShakingTrue,
 			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
