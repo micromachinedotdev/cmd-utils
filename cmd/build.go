@@ -11,6 +11,7 @@ import (
 
 var rootDir string
 var buildScript string
+var buildEnv string
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -58,6 +59,7 @@ It performs the following steps:
 			ModulePath:     entrypoint,
 			PackageManager: *packageManager,
 			BuildScript:    buildScript,
+			Environment:    buildEnv,
 			WrangleConfig:  wrangler,
 		}
 
@@ -85,5 +87,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	buildCmd.PersistentFlags().StringVarP(&rootDir, "rootdir", "r", ".", "--rootdir ./apps/hello-world")
-	buildCmd.PersistentFlags().StringVarP(&buildScript, "build-script", "b", "build", "--s build")
+	buildCmd.PersistentFlags().StringVarP(&buildScript, "build-script", "b", "build", "--b build")
+	buildCmd.PersistentFlags().StringVarP(&buildEnv, "env", "e", "production", "--e production")
 }
