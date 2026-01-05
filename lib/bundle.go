@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"micromachine.dev/cmd-utils/lib/plugins"
 )
 
 type Bundle struct {
@@ -29,8 +30,6 @@ func (b *Bundle) Pack() {
 
 		var warnedPackages = make(map[string][]string)
 
-		nodeCompatPlugin := createNodeCompatPlugin()
-
 		var cfPaths = make(map[string]struct{})
 
 		cloudflarePlugin := api.Plugin{
@@ -44,21 +43,50 @@ func (b *Bundle) Pack() {
 			},
 		}
 
+		absDir, err := filepath.Abs(b.RootDir)
+		if err != nil {
+			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+			os.Exit(1)
+		}
+
+		nodejsHybridPlugin := plugins.NodeJsHybridPlugin{
+			BasePath:       absDir,
+			PackageManager: b.PackageManager,
+		}
+
+		wranglerCDate, ok := b.WrangleConfig["compatibility_date"].(string)
+
+		if !ok {
+			LogWithColor(Fail, "✗ Invalid wrangler configuration: missing or invalid compatibility_date")
+			os.Exit(1)
+		}
+
+		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
+		if err != nil {
+			LogWithColor(Fail, "✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
+			os.Exit(1)
+		}
+
 		result := api.Build(api.BuildOptions{
-			Plugins:     []api.Plugin{nodeCompatPlugin, cloudflarePlugin},
-			EntryPoints: []string{b.RootDir + "/" + strings.TrimPrefix(b.ModulePath, "/")},
-			Outdir:      b.GetModuleDir(),
-			Bundle:      true,
-			Write:       true,
-			Splitting:   false,
-			LogLevel:    api.LogLevelInfo,
-			Format:      api.FormatDefault,
-			Platform:    api.PlatformNeutral,
-			TreeShaking: api.TreeShakingTrue,
-			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
+			Plugins: []api.Plugin{
+				cloudflarePlugin,
+				nodejsHybridPlugin.New(
+					compatibilityDate.Format(time.DateOnly),
+					[]string{"nodejs_compat", "global_fetch_strictly_public"})},
+			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
+			Outdir:        b.GetModuleDir(),
+			AbsWorkingDir: absDir,
+			Bundle:        true,
+			Write:         true,
+			Splitting:     false,
+			LogLevel:      api.LogLevelInfo,
+			Format:        api.FormatDefault,
+			Platform:      api.PlatformNeutral,
+			TreeShaking:   api.TreeShakingTrue,
+			Loader:        map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Drop console/debugger
-			//Drop: api.DropConsole | api.DropDebugger,
+			Drop: api.DropConsole | api.DropDebugger,
 
 			// Target modern runtime (Cloudflare Workers)
 			Target: api.ES2024,
@@ -67,9 +95,10 @@ func (b *Bundle) Pack() {
 			MinifyWhitespace:  true,
 			MinifyIdentifiers: true,
 			MinifySyntax:      true,
-			KeepNames:         true,
-			Metafile:          true,
-			Conditions:        []string{"workerd", "worker", "browser"},
+
+			KeepNames:  true,
+			Metafile:   true,
+			Conditions: []string{"workerd", "worker", "browser"},
 			Define: map[string]string{
 				"process.env.NODE_ENV":            toJSString(b.Environment),
 				"global.process.env.NODE_ENV":     toJSString(b.Environment),
@@ -87,7 +116,7 @@ func (b *Bundle) Pack() {
 
 		// Later, after build:
 		for path, importers := range warnedPackages {
-			LogWithColor(Fail, fmt.Sprintf("Warning: Node builtin %q used (from %v)\n", path, importers))
+			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
 
 		// After build (check format if needed):
@@ -129,7 +158,7 @@ func (b *Bundle) RunBuildCommand() {
 }
 
 func (b *Bundle) GetOutputDir() string {
-	return b.RootDir + "/.micromachine"
+	return "./.micromachine"
 }
 
 func (b *Bundle) GetModuleDir() string {
@@ -137,7 +166,7 @@ func (b *Bundle) GetModuleDir() string {
 }
 
 func (b *Bundle) GetAssetDir() string {
-	return b.GetOutputDir() + "/assets"
+	return b.RootDir + "/.micromachine/assets"
 }
 
 func copyDir(src, dst string) error {
@@ -167,98 +196,4 @@ func toJSString(val string) string {
 	// JSON marshal handles escaping
 	b, _ := json.Marshal(val)
 	return string(b)
-}
-
-var nodeBuiltins = map[string]bool{
-	"async_hooks": true, "buffer": true, "crypto": true, "events": true,
-	"fs": true, "http": true, "https": true, "os": true, "path": true,
-	"stream": true, "tty": true, "url": true, "util": true, "vm": true,
-	"zlib": true, "net": true, "child_process": true, "worker_threads": true,
-	"assert": true, "constants": true, "dns": true, "domain": true,
-	"module": true, "process": true, "punycode": true, "querystring": true,
-	"readline": true, "repl": true, "string_decoder": true, "sys": true,
-	"timers": true, "v8": true, "wasi": true,
-}
-
-func createNodeCompatPlugin() api.Plugin {
-	seen := make(map[string]struct{})
-	warnedPackages := make(map[string][]string)
-
-	return api.Plugin{
-		Name: "nodejs_compat",
-		Setup: func(build api.PluginBuild) {
-			// Clear state on each build
-			build.OnStart(func() (api.OnStartResult, error) {
-				seen = make(map[string]struct{})
-				warnedPackages = make(map[string][]string)
-				return api.OnStartResult{}, nil
-			})
-
-			// Handle node: prefixed imports
-			build.OnResolve(api.OnResolveOptions{Filter: `^node:`},
-				func(args api.OnResolveArgs) (api.OnResolveResult, error) {
-					// Composite key for deduplication
-					specifier := fmt.Sprintf("%s:%d:%s:%s", args.Path, args.Kind, args.ResolveDir, args.Importer)
-					if _, ok := seen[specifier]; ok {
-						return api.OnResolveResult{}, nil
-					}
-					seen[specifier] = struct{}{}
-
-					// Try to resolve as a normal package (maybe there's a polyfill)
-					result := build.Resolve(args.Path, api.ResolveOptions{
-						Kind:       args.Kind,
-						ResolveDir: args.ResolveDir,
-						Importer:   args.Importer,
-					})
-
-					if len(result.Errors) > 0 {
-						// Not found locally, mark as external (runtime will provide it)
-						warnedPackages[args.Path] = append(warnedPackages[args.Path], args.Importer)
-						return api.OnResolveResult{External: true}, nil
-					}
-
-					// Found locally, use that
-					return api.OnResolveResult{Path: result.Path}, nil
-				})
-
-			// Handle bare Node.js built-in imports (fs, path, etc.)
-			build.OnResolve(api.OnResolveOptions{Filter: `^[a-z_]+$`},
-				func(args api.OnResolveArgs) (api.OnResolveResult, error) {
-					if !nodeBuiltins[args.Path] {
-						return api.OnResolveResult{}, nil
-					}
-
-					specifier := fmt.Sprintf("%s:%d:%s:%s", args.Path, args.Kind, args.ResolveDir, args.Importer)
-					if _, ok := seen[specifier]; ok {
-						return api.OnResolveResult{}, nil
-					}
-					seen[specifier] = struct{}{}
-
-					// Try to resolve (maybe there's a polyfill installed)
-					result := build.Resolve(args.Path, api.ResolveOptions{
-						Kind:       args.Kind,
-						ResolveDir: args.ResolveDir,
-						Importer:   args.Importer,
-					})
-
-					if len(result.Errors) > 0 {
-						warnedPackages[args.Path] = append(warnedPackages[args.Path], args.Importer)
-						return api.OnResolveResult{External: true}, nil
-					}
-
-					return api.OnResolveResult{Path: result.Path}, nil
-				})
-
-			// Log warnings at the end
-			//build.OnEnd(func(result *api.BuildResult) (api.OnEndResult, error) {
-			//	for pkg, importers := range warnedPackages {
-			//		//fmt.Printf("⚠️  Package %q is a Node.js built-in. Imported from:\n", pkg)
-			//		for _, imp := range importers {
-			//			fmt.Printf("   - %s\n", imp)
-			//		}
-			//	}
-			//	return api.OnEndResult{}, nil
-			//})
-		},
-	}
 }

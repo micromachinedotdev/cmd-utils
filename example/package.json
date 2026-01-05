@@ -20,6 +20,7 @@
 		"react-dom": "19.1.4"
 	},
 	"devDependencies": {
+		"@cloudflare/unenv-preset": "^2.7.13",
 		"@eslint/eslintrc": "^3",
 		"@tailwindcss/postcss": "^4",
 		"@types/node": "^20",
@@ -29,6 +30,7 @@
 		"eslint-config-next": "15.4.6",
 		"tailwindcss": "^4",
 		"typescript": "^5",
+		"unenv": "2.0.0-rc.24",
 		"wrangler": "^4.54.0"
 	}
 }

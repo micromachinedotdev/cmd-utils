@@ -12,6 +12,8 @@ import (
 var rootDir string
 var buildScript string
 var buildEnv string
+var compatibilityFlags []string
+var compatibilityDate = time.Time{}
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -65,7 +67,7 @@ It performs the following steps:
 
 		start := time.Now()
 		lib.LogWithColor(lib.Cyan, "Running `micromachine build`...")
-		bundler.RunBuildCommand()
+		//bundler.RunBuildCommand()
 
 		bundler.Pack()
 		elapsed := time.Since(start)
@@ -89,4 +91,8 @@ func init() {
 	buildCmd.PersistentFlags().StringVarP(&rootDir, "rootdir", "r", ".", "--rootdir ./apps/hello-world")
 	buildCmd.PersistentFlags().StringVarP(&buildScript, "build-script", "b", "build", "--b build")
 	buildCmd.PersistentFlags().StringVarP(&buildEnv, "env", "e", "production", "--e production")
+	buildCmd.PersistentFlags().StringArrayVarP(&compatibilityFlags, "flags", "f", []string{}, "--f nodejs_compat")
+	buildCmd.PersistentFlags().TimeVarP(&compatibilityDate, "compatibility-date", "d", time.Now(), []string{
+		time.DateOnly,
+	}, "-d 2025-01-01")
 }
