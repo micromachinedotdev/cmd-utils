@@ -22,6 +22,7 @@ type NodeJsHybridPlugin struct {
 }
 
 var nodeModulesReStr = fmt.Sprintf(`^(node:)?(%s)$`, strings.Join(getNodeJsBuiltinModules(), "|"))
+
 var nodeModulesRe = regexp.MustCompile(nodeModulesReStr)
 
 func (p *NodeJsHybridPlugin) New(compatibilityDate string, compatibilityFlags []string) api.Plugin {
@@ -58,9 +59,7 @@ func (*NodeJsHybridPlugin) errorOnServiceWorkerFormat(build api.PluginBuild) {
 	})
 
 	build.OnResolve(api.OnResolveOptions{Filter: nodeModulesReStr}, func(args api.OnResolveArgs) (api.OnResolveResult, error) {
-		if nodeModulesRe.MatchString(regexp.QuoteMeta(args.Path)) {
-			paths[args.Path] = args.Importer
-		}
+		paths[args.Path] = args.Importer
 		return api.OnResolveResult{}, nil
 	})
 
@@ -160,15 +159,15 @@ func (p *NodeJsHybridPlugin) handleUnenvAliasedPackages(build api.PluginBuild, a
 	})
 
 	build.OnLoad(api.OnLoadOptions{Filter: ".*", Namespace: requiredUnenvAliasNamespace}, func(args api.OnLoadArgs) (api.OnLoadResult, error) {
-		content := `
-					import * as esm from '${path}';
+		content := fmt.Sprintf(`
+					import * as esm from '%s';
 					module.exports = Object.entries(esm)
 								.filter(([k,]) => k !== 'default')
 								.reduce((cjs, [k, value]) =>
 									Object.defineProperty(cjs, k, { value, enumerable: true }),
 									"default" in esm ? esm.default : {}
 								);
-				`
+				`, args.Path)
 		return api.OnLoadResult{
 			Contents: &content,
 			Loader:   api.LoaderJS,
@@ -354,15 +353,9 @@ func (p *NodeJsHybridPlugin) getUnenvConfig(dir string, compatibilityDate string
 
 	cmd := exec.Command(p.PackageManager, "install", "--silent", "-D", "unenv@2.0.0-rc.24", "@cloudflare/unenv-preset@latest")
 	cmd.Dir = dir
-	//if err := cmd.Run(); err != nil {
-	//	return nil, fmt.Errorf("failed to install unenv: %w", err)
-	//}
-
-	b, err := cmd.Output()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("failed to install unenv: %w", err)
 	}
-	fmt.Println(string(b))
 
 	flagsJSON, _ := json.Marshal(compatibilityFlags)
 
@@ -408,7 +401,7 @@ func (p *NodeJsHybridPlugin) getUnenvConfig(dir string, compatibilityDate string
 }
 
 func getNodeJsBuiltinModules() []string {
-	cmd := exec.Command("node", "-e", "console.log(require('module').builtinModules)")
+	cmd := exec.Command("node", "-e", "console.log(JSON.stringify(require('module').builtinModules))")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil

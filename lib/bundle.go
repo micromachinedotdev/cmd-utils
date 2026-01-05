@@ -69,10 +69,11 @@ func (b *Bundle) Pack() {
 
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
-				cloudflarePlugin,
 				nodejsHybridPlugin.New(
 					compatibilityDate.Format(time.DateOnly),
-					[]string{"nodejs_compat", "global_fetch_strictly_public"})},
+					[]string{"nodejs_compat", "global_fetch_strictly_public"}),
+				cloudflarePlugin,
+			},
 			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
 			Outdir:        b.GetModuleDir(),
 			AbsWorkingDir: absDir,
@@ -80,16 +81,13 @@ func (b *Bundle) Pack() {
 			Write:         true,
 			Splitting:     false,
 			LogLevel:      api.LogLevelSilent,
-			Format:        api.FormatDefault,
-			Platform:      api.PlatformNeutral,
+			Format:        api.FormatESModule,
+			Platform:      api.PlatformBrowser,
 			TreeShaking:   api.TreeShakingTrue,
 			Loader:        map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
-			// Drop console/debugger
-			Drop: api.DropConsole | api.DropDebugger,
-
 			// Target modern runtime (Cloudflare Workers)
-			Target: api.ES2024,
+			Target: api.ESNext,
 
 			External:          []string{"__STATIC_CONTENT_MANIFEST"},
 			MinifyWhitespace:  true,
@@ -97,6 +95,7 @@ func (b *Bundle) Pack() {
 			MinifySyntax:      true,
 			KeepNames:         true,
 			Metafile:          true,
+			Sourcemap:         api.SourceMapLinked,
 			Conditions:        []string{"workerd", "worker", "browser"},
 			Define: map[string]string{
 				"process.env.NODE_ENV":            toJSString(b.Environment),
