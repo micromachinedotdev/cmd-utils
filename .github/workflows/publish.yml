@@ -4,8 +4,6 @@
 name: Publish
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -29,6 +27,9 @@ jobs:
 
     - name: Install
       run: make deps
+
+    - name: Test
+      run: make test
 
     - name: Build
       run: make build-all

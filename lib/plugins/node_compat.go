@@ -24,8 +24,6 @@ type NodeJsHybridPlugin struct {
 
 var nodeModulesReStr = fmt.Sprintf(`^(node:)?(%s)$`, strings.Join(getNodeJsBuiltinModules(), "|"))
 
-var nodeModulesRe = regexp.MustCompile(nodeModulesReStr)
-
 func (p *NodeJsHybridPlugin) New(compatibilityDate string, compatibilityFlags []string) api.Plugin {
 	return api.Plugin{
 		Name: "hybrid-nodejs_compat",
@@ -218,13 +216,13 @@ func (p *NodeJsHybridPlugin) handleNodeJSGlobals(build api.PluginBuild, inject m
 		var module, exportName, importName string
 
 		if arr, ok := moduleSpecifier.([]interface{}); ok {
-			strings := make([]string, len(arr))
+			moduleNames := make([]string, len(arr))
 			for i, v := range arr {
-				strings[i] = v.(string)
+				moduleNames[i] = v.(string)
 			}
-			module = strings[0]
-			exportName = strings[1]
-			importName = strings[2]
+			module = moduleNames[0]
+			exportName = moduleNames[1]
+			importName = moduleNames[2]
 		} else if arr, ok := moduleSpecifier.([]string); ok {
 			module = arr[0]
 			exportName = arr[1]

@@ -9,6 +9,9 @@ LDFLAGS := -s -w -X main.Version=$(VERSION) -X main.Commit=$(COMMIT)
 lint:
 	golangci-lint run
 
+test:
+	go test ./...
+
 # Install dependencies
 deps:
 	go mod download

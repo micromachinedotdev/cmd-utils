@@ -18,6 +18,5 @@ var Cyan = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))
 var Default = lipgloss.NewStyle()
 
 func LogWithColor(color lipgloss.Style, text string) {
-
-	fmt.Println(fmt.Sprintf("%s %s", Gray.Render(time.Now().Format(time.TimeOnly)), color.Render(text)))
+	fmt.Printf("%s %s\n", Gray.Render(time.Now().Format(time.TimeOnly)), color.Render(text))
 }

@@ -139,7 +139,6 @@ func (b *Bundle) Pack() {
 }
 
 func (b *Bundle) RunBuildCommand() {
-
 	// Capture stdout and stderr separately
 	cmd := exec.Command(b.PackageManager, "run", b.BuildScript)
 	cmd.Dir = b.RootDir

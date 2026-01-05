@@ -2,7 +2,6 @@ package lib
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -53,5 +52,6 @@ func DetectPackageManager(root *string) (*string, error) {
 		return &pm, nil
 	}
 
-	return nil, errors.New("could not detect package manager")
+	npm := "npm"
+	return &npm, nil
 }
