@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/evanw/esbuild/pkg/api"
 )
@@ -52,24 +53,32 @@ func (p *NodeJsHybridPlugin) New(compatibilityDate string, compatibilityFlags []
  */
 func (*NodeJsHybridPlugin) errorOnServiceWorkerFormat(build api.PluginBuild) {
 	paths := make(map[string]string)
+	mu := sync.RWMutex{}
 
 	build.OnStart(func() (api.OnStartResult, error) {
+		mu.Lock()
 		paths = make(map[string]string)
+		mu.Unlock()
 		return api.OnStartResult{}, nil
 	})
 
 	build.OnResolve(api.OnResolveOptions{Filter: nodeModulesReStr}, func(args api.OnResolveArgs) (api.OnResolveResult, error) {
+		mu.Lock()
 		paths[args.Path] = args.Importer
+		mu.Unlock()
 		return api.OnResolveResult{}, nil
 	})
 
 	build.OnEnd(func(result *api.BuildResult) (api.OnEndResult, error) {
-
 		if build.InitialOptions.Format == api.FormatIIFE && len(paths) > 0 {
+			mu.RLock()
 			pathList := make([]string, 0, len(paths))
 			for path := range paths {
 				pathList = append(pathList, path)
 			}
+
+			mu.RUnlock()
+
 			return api.OnEndResult{
 				Errors: []api.Message{
 					{
