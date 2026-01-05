@@ -52,5 +52,14 @@ release:
 
 npm-publish:
 	@echo "Publishing version $(VERSION)"
+	node -e " \
+		const fs = require('fs'); \
+		const pkg = JSON.parse(fs.readFileSync('npm/$(BINARY)/package.json')); \
+		pkg.version = '$(VERSION)'; \
+		for (const dep in pkg.optionalDependencies) { \
+			pkg.optionalDependencies[dep] = '$(VERSION)'; \
+		} \
+		fs.writeFileSync('npm/$(BINARY)/package.json', JSON.stringify(pkg, null, 2) + '\n'); \
+	"
 	@find npm/$(APP_PREFIX) -name "package.json" -execdir npm version $(VERSION) --no-git-tag-version \; -execdir npm publish --access public \;
 	cd npm/$(BINARY) && npm version $(VERSION) --no-git-tag-version && npm publish --access public
