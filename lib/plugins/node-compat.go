@@ -352,9 +352,7 @@ type unenvConfig struct {
 
 func (p *NodeJsHybridPlugin) getUnenvConfig(dir string, compatibilityDate string, compatibilityFlags []string) (*unenvConfig, error) {
 
-	fmt.Println("Found directory " + dir)
-
-	cmd := exec.Command(p.PackageManager, "install", "-D", "unenv@2.0.0-rc.24", "@cloudflare/unenv-preset@latest")
+	cmd := exec.Command(p.PackageManager, "install", "--silent", "-D", "unenv@2.0.0-rc.24", "@cloudflare/unenv-preset@latest")
 	cmd.Dir = dir
 	//if err := cmd.Run(); err != nil {
 	//	return nil, fmt.Errorf("failed to install unenv: %w", err)

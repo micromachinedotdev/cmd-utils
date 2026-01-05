@@ -79,7 +79,7 @@ func (b *Bundle) Pack() {
 			Bundle:        true,
 			Write:         true,
 			Splitting:     false,
-			LogLevel:      api.LogLevelInfo,
+			LogLevel:      api.LogLevelSilent,
 			Format:        api.FormatDefault,
 			Platform:      api.PlatformNeutral,
 			TreeShaking:   api.TreeShakingTrue,
@@ -95,10 +95,9 @@ func (b *Bundle) Pack() {
 			MinifyWhitespace:  true,
 			MinifyIdentifiers: true,
 			MinifySyntax:      true,
-
-			KeepNames:  true,
-			Metafile:   true,
-			Conditions: []string{"workerd", "worker", "browser"},
+			KeepNames:         true,
+			Metafile:          true,
+			Conditions:        []string{"workerd", "worker", "browser"},
 			Define: map[string]string{
 				"process.env.NODE_ENV":            toJSString(b.Environment),
 				"global.process.env.NODE_ENV":     toJSString(b.Environment),
@@ -118,8 +117,6 @@ func (b *Bundle) Pack() {
 		for path, importers := range warnedPackages {
 			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
-
-		// After build (check format if needed):
 
 	}
 
