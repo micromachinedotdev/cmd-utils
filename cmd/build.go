@@ -86,7 +86,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	buildCmd.PersistentFlags().StringVarP(&rootDir, "rootdir", "r", ".", "--rootdir ./apps/hello-world")
+	buildCmd.PersistentFlags().StringVarP(&rootDir, "rootdir", "r", ".", "--rootdir ./apps/client")
 	buildCmd.PersistentFlags().StringVarP(&buildScript, "script", "s", "script", "--s build")
 	buildCmd.PersistentFlags().StringVarP(&buildEnv, "env", "e", "production", "--e production")
 }
