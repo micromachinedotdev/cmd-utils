@@ -55,7 +55,6 @@ npm-publish:
 	node -e " \
 		const fs = require('fs'); \
 		const pkg = JSON.parse(fs.readFileSync('npm/$(BINARY)/package.json')); \
-		pkg.version = '$(VERSION)'; \
 		for (const dep in pkg.optionalDependencies) { \
 			pkg.optionalDependencies[dep] = '$(VERSION)'; \
 		} \
