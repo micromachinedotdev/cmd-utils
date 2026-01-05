@@ -7,8 +7,10 @@ on:
   push:
     branches: ["main"]
 
-jobs:
+permissions:
+  contents: write
 
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
