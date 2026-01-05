@@ -4,6 +4,7 @@ BINARY := micromachine
 VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
 COMMIT := $(shell git rev-parse --short HEAD)
 LDFLAGS := -s -w -X main.Version=$(VERSION) -X main.Commit=$(COMMIT)
+.PHONY: lint test deps build-all release npm-publish
 
 # Run linter
 lint:
@@ -41,13 +42,15 @@ build-win32-arm64:
 build-win32-x64:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o npm/$(APP_PREFIX)/win32-x64/bin/$(BINARY).exe ./main.go
 
+release:
+	npx --package semantic-release \
+	--package @semantic-release/exec \
+	--package @semantic-release/git \
+	--package conventional-changelog-conventionalcommits \
+	semantic-release
+
+
 npm-publish:
 	@echo "Publishing version $(VERSION)"
-	cd npm/$(APP_PREFIX)/darwin-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/darwin-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/linux-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/linux-arm && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/linux-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/win32-arm64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
-	cd npm/$(APP_PREFIX)/win32-x64 && npm version $(VERSION) --no-git-tag-version && npm publish --access public
+	@find npm/$(APP_PREFIX) -name "package.json" -execdir npm version $(VERSION) --no-git-tag-version \; -execdir npm publish --access public \;
 	cd npm/$(BINARY) && npm version $(VERSION) --no-git-tag-version && npm publish --access public
