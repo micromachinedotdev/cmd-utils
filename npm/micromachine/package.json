@@ -19,7 +19,7 @@
     "@micromachine.dev/cli-linux-x64": "1.0.7",
     "@micromachine.dev/cli-linux-arm": "1.0.7",
     "@micromachine.dev/cli-linux-arm64": "1.0.7",
-    "@micromachine.dev/cli-windows-x64": "1.0.7",
-    "@micromachine.dev/cli-windows-arm64": "1.0.7"
+    "@micromachine.dev/cli-win32-x64": "1.0.7",
+    "@micromachine.dev/cli-win32-arm64": "1.0.7"
   }
 }
