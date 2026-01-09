@@ -12,6 +12,8 @@ import (
 var rootDir string
 var buildScript string
 var buildEnv string
+var userDefinedEntrypoint string
+var shouldBundle bool
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -38,12 +40,7 @@ It performs the following steps:
 			os.Exit(1)
 		}
 
-		entrypoint, ok := wrangler["main"].(string)
-
-		if !ok {
-			lib.LogWithColor(lib.Fail, "✗ Main entrypoint not found")
-			os.Exit(1)
-		}
+		wranglerEntrypoint, _ := wrangler["main"].(string)
 
 		var assetPath string
 
@@ -51,6 +48,21 @@ It performs the following steps:
 			if dir, ok := assets["directory"].(string); ok {
 				assetPath = dir
 			}
+		}
+
+		var entrypoint string
+
+		if wranglerEntrypoint != "" {
+			entrypoint = wranglerEntrypoint
+		}
+
+		if userDefinedEntrypoint != "" {
+			entrypoint = userDefinedEntrypoint
+		}
+
+		if entrypoint == "" {
+			lib.LogWithColor(lib.Fail, "✗ No entrypoint not found")
+			os.Exit(1)
 		}
 
 		bundler := lib.Bundle{
@@ -61,11 +73,16 @@ It performs the following steps:
 			BuildScript:    buildScript,
 			Environment:    buildEnv,
 			WrangleConfig:  wrangler,
+			ShouldBundle:   shouldBundle,
 		}
 
 		start := time.Now()
 		lib.LogWithColor(lib.Cyan, "Running `micromachine build`...")
-		bundler.RunBuildCommand()
+		fmt.Println("Script: ", bundler.BuildScript)
+
+		if bundler.BuildScript != "" {
+			bundler.RunBuildCommand()
+		}
 
 		bundler.Pack()
 		elapsed := time.Since(start)
@@ -87,6 +104,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	buildCmd.PersistentFlags().StringVarP(&rootDir, "rootdir", "r", ".", "--rootdir ./apps/client")
-	buildCmd.PersistentFlags().StringVarP(&buildScript, "script", "s", "script", "--s build")
+	buildCmd.PersistentFlags().StringVarP(&buildScript, "script", "s", "", "--s build")
 	buildCmd.PersistentFlags().StringVarP(&buildEnv, "env", "e", "production", "--e production")
+	buildCmd.PersistentFlags().StringVarP(&userDefinedEntrypoint, "entrypoint", "i", "", "--i ./dist/worker.js")
+	buildCmd.PersistentFlags().BoolVarP(&shouldBundle, "bundle", "b", false, "--bundle")
 }

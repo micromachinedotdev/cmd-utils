@@ -12,7 +12,7 @@ func TestWranglerConfigForOpenNext(t *testing.T) {
 	}
 	result := IsOpenNext(conf)
 	if result != true {
-		t.Errorf("Expected is_opennext to return true, got %v", result)
+		t.Errorf("Expected `IsOpenNext` to return true, got %v", result)
 	}
 }
 
@@ -26,6 +26,6 @@ func TestWranglerConfigForNonOpenNext(t *testing.T) {
 	}
 	result := IsOpenNext(conf)
 	if result != false {
-		t.Errorf("Expected is_opennext to return false, got %v", result)
+		t.Errorf("Expected `IsOpenNext` to return false, got %v", result)
 	}
 }

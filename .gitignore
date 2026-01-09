@@ -1,7 +1,8 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 # Logs
-
+.next/
+.open-next/
 logs
 _.log
 npm-debug.log_

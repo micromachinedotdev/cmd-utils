@@ -29,6 +29,10 @@ func (p *NodeJsHybridPlugin) New(compatibilityDate string, compatibilityFlags []
 		Name: "hybrid-nodejs_compat",
 		Setup: func(build api.PluginBuild) {
 
+			if len(compatibilityFlags) <= 0 {
+				return
+			}
+
 			cfg, err := p.getUnenvConfig(p.BasePath, compatibilityDate, compatibilityFlags)
 
 			if err != nil {
@@ -358,7 +362,7 @@ type unenvConfig struct {
 
 func (p *NodeJsHybridPlugin) getUnenvConfig(dir string, compatibilityDate string, compatibilityFlags []string) (*unenvConfig, error) {
 
-	cmd := exec.Command(p.PackageManager, "install", "--silent", "-D", "unenv@2.0.0-rc.24", "@cloudflare/unenv-preset@latest")
+	cmd := exec.Command(p.PackageManager, "install", "-D", "unenv@2.0.0-rc.24", "@cloudflare/unenv-preset@latest")
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("failed to install unenv: %w", err)
@@ -386,6 +390,7 @@ func (p *NodeJsHybridPlugin) getUnenvConfig(dir string, compatibilityDate string
         }).env;
         console.log(JSON.stringify({ alias, inject, external, polyfill }));
     `
+
 	script = fmt.Sprintf(script, compatibilityDate, flagsJSON)
 
 	cmd = exec.Command("node", "--input-type=module", "-e", script)

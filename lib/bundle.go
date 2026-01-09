@@ -22,12 +22,20 @@ type Bundle struct {
 	BuildScript    string
 	Environment    string
 	WrangleConfig  map[string]any
+	ShouldBundle   bool
 }
 
 func (b *Bundle) Pack() {
-	shouldBundle := IsOpenNext(b.WrangleConfig)
-	if shouldBundle {
+	//err := os.MkdirAll(b.GetOutputDir(), 0755)
+	//
+	//if err != nil {
+	//	LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+	//	os.Exit(1)
+	//}
 
+	shouldBundle := IsOpenNext(b.WrangleConfig) || b.ShouldBundle
+
+	if shouldBundle {
 		var warnedPackages = make(map[string][]string)
 
 		var cfPaths = make(map[string]struct{})
@@ -54,6 +62,15 @@ func (b *Bundle) Pack() {
 			PackageManager: b.PackageManager,
 		}
 
+		externalFilesPlugin := plugins.ExternalFilePlugin{
+			Extensions: []string{
+				".wasm",
+				".bin",
+				".html",
+				".txt",
+			},
+		}
+
 		wranglerCDate, ok := b.WrangleConfig["compatibility_date"].(string)
 
 		if !ok {
@@ -67,11 +84,18 @@ func (b *Bundle) Pack() {
 			os.Exit(1)
 		}
 
+		compatibilityFlags := make([]string, 0)
+
+		if b.WrangleConfig["compatibility_flags"] != nil {
+			if flags, ok := b.WrangleConfig["compatibility_flags"].([]string); ok {
+				compatibilityFlags = append(flags, flags...)
+			}
+		}
+
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
-				nodejsHybridPlugin.New(
-					compatibilityDate.Format(time.DateOnly),
-					[]string{"nodejs_compat", "global_fetch_strictly_public"}),
+				externalFilesPlugin.New(),
+				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
 				cloudflarePlugin,
 			},
 			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
@@ -82,7 +106,7 @@ func (b *Bundle) Pack() {
 			Splitting:     false,
 			LogLevel:      api.LogLevelSilent,
 			Format:        api.FormatESModule,
-			Platform:      api.PlatformBrowser,
+			Platform:      api.PlatformNeutral,
 			TreeShaking:   api.TreeShakingTrue,
 			Loader:        map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
@@ -120,11 +144,14 @@ func (b *Bundle) Pack() {
 	}
 
 	now := time.Now()
-	LogWithColor(Default, "Copying assets...")
-	err := copyDir(b.RootDir+"/"+strings.TrimPrefix(b.AssetPath, "/"), b.GetAssetDir())
-	if err != nil {
-		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+
+	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
+		LogWithColor(Default, "Copying assets...")
+		err := copyDir(b.RootDir+"/"+strings.TrimPrefix(b.AssetPath, "/"), b.GetAssetDir())
+		if err != nil {
+			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+			os.Exit(1)
+		}
 	}
 
 	if !shouldBundle {
