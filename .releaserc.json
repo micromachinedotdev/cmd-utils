@@ -1,13 +1,33 @@
 {
-  "branches": ["main"],
+  "branches": [
+    {
+      "name": "main"
+    },
+    {
+      "name": "pre/rc",
+      "channel": "pre/rc",
+      "prerelease": "rc"
+    },
+    {
+      "name": "beta",
+      "channel": "beta",
+      "prerelease": true
+    }
+  ],
   "plugins": [
-    ["@semantic-release/commit-analyzer", {
-      "preset": "conventionalcommits"
-    }],
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
     "@semantic-release/release-notes-generator",
-    ["@semantic-release/exec", {
-      "publishCmd": "make npm-publish VERSION=${nextRelease.version}"
-    }],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "make npm-publish VERSION=${nextRelease.version}"
+      }
+    ],
     "@semantic-release/github"
   ]
 }
