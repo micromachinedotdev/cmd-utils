@@ -84,11 +84,22 @@ It performs the following steps:
 			// Run open-next-build
 			start := time.Now()
 			lib.LogWithColor(lib.Default, "Running `opennextjs-cloudflare build`...")
-			err := bundler.RunExecutableCommand("@opennextjs/cloudflare", "build")
+
+			// Install opennextjs/cloudflare for next
+			err := bundler.RunCommand(*packageManager, "--silent", "install", "@opennextjs/cloudflare")
 			if err != nil {
 				lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
 				os.Exit(1)
 			}
+
+			// Run build
+			err = bundler.RunCommand(*packageManager, "opennextjs-cloudflare", "build")
+			if err != nil {
+				lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+				os.Exit(1)
+			}
+
+			// Calculate time elapsed.
 			elapsed := time.Since(start)
 			lib.LogWithColor(lib.Success, fmt.Sprintf("✓ Completed `opennextjs-cloudflare build` in %s", elapsed))
 		default:

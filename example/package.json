@@ -6,15 +6,10 @@
 		"dev": "next dev --turbopack",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint",
-		"opennextjs-build": "opennextjs-cloudflare build",
-		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-		"upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
+		"lint": "next lint"
 	},
 	"dependencies": {
-		"@opennextjs/cloudflare": "^1.14.4",
+		"@opennextjs/cloudflare": "^1.14.8",
 		"next": "15.5.9",
 		"react": "19.1.4",
 		"react-dom": "19.1.4"
