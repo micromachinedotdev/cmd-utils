@@ -2,6 +2,7 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -87,15 +88,20 @@ func (b *Bundle) Pack() {
 		compatibilityFlags := make([]string, 0)
 
 		if b.WrangleConfig["compatibility_flags"] != nil {
-			if flags, ok := b.WrangleConfig["compatibility_flags"].([]string); ok {
-				compatibilityFlags = append(flags, flags...)
+			if flags, ok := b.WrangleConfig["compatibility_flags"].([]interface{}); ok {
+				for _, v := range flags {
+					if flag, ok := v.(string); ok {
+						compatibilityFlags = append(compatibilityFlags, flag)
+					}
+				}
+
 			}
 		}
 
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
-				externalFilesPlugin.New(),
 				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
+				externalFilesPlugin.New(),
 				cloudflarePlugin,
 			},
 			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
@@ -146,9 +152,15 @@ func (b *Bundle) Pack() {
 	now := time.Now()
 
 	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
-		LogWithColor(Default, "Copying assets...")
-		err := copyDir(b.RootDir+"/"+strings.TrimPrefix(b.AssetPath, "/"), b.GetAssetDir())
-		if err != nil {
+		if _, err := os.Stat(b.AssetPath); err == nil {
+			LogWithColor(Default, "Copying assets...")
+			err = copyDir(filepath.Join(b.RootDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir())
+
+			if err != nil {
+				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+				os.Exit(1)
+			}
+		} else if !errors.Is(err, os.ErrNotExist) {
 			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(1)
 		}
@@ -184,11 +196,11 @@ func (b *Bundle) GetOutputDir() string {
 }
 
 func (b *Bundle) GetModuleDir() string {
-	return b.GetOutputDir() + "/worker"
+	return filepath.Join(b.GetOutputDir(), "/worker")
 }
 
 func (b *Bundle) GetAssetDir() string {
-	return b.RootDir + "/.micromachine/assets"
+	return filepath.Join(b.RootDir, ".micromachine/assets")
 }
 
 func copyDir(src, dst string) error {

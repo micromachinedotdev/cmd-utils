@@ -22,8 +22,8 @@ importers:
         version: 19.1.4(react@19.1.4)
     devDependencies:
       '@cloudflare/unenv-preset':
-        specifier: ^2.7.13
-        version: 2.7.13(unenv@2.0.0-rc.24)(workerd@1.20251210.0)
+        specifier: ^2.8.0
+        version: 2.8.0(unenv@2.0.0-rc.24)(workerd@1.20251210.0)
       '@eslint/eslintrc':
         specifier: ^3
         version: 3.3.3
@@ -427,6 +427,15 @@ packages:
 
   '@cloudflare/unenv-preset@2.7.13':
     resolution: {integrity: sha512-NulO1H8R/DzsJguLC0ndMuk4Ufv0KSlN+E54ay9rn9ZCQo0kpAPwwh3LhgpZ96a3Dr6L9LqW57M4CqC34iLOvw==}
+    peerDependencies:
+      unenv: 2.0.0-rc.24
+      workerd: ^1.20251202.0
+    peerDependenciesMeta:
+      workerd:
+        optional: true
+
+  '@cloudflare/unenv-preset@2.8.0':
+    resolution: {integrity: sha512-oIAu6EdQ4zJuPwwKr9odIEqd8AV96z1aqi3RBEA4iKaJ+Vd3fvuI6m5EDC7/QCv+oaPIhy1SkYBYxmD09N+oZg==}
     peerDependencies:
       unenv: 2.0.0-rc.24
       workerd: ^1.20251202.0
@@ -4758,6 +4767,12 @@ snapshots:
       mime: 3.0.0
 
   '@cloudflare/unenv-preset@2.7.13(unenv@2.0.0-rc.24)(workerd@1.20251210.0)':
+    dependencies:
+      unenv: 2.0.0-rc.24
+    optionalDependencies:
+      workerd: 1.20251210.0
+
+  '@cloudflare/unenv-preset@2.8.0(unenv@2.0.0-rc.24)(workerd@1.20251210.0)':
     dependencies:
       unenv: 2.0.0-rc.24
     optionalDependencies:

@@ -78,7 +78,6 @@ It performs the following steps:
 
 		start := time.Now()
 		lib.LogWithColor(lib.Cyan, "Running `micromachine build`...")
-		fmt.Println("Script: ", bundler.BuildScript)
 
 		if bundler.BuildScript != "" {
 			bundler.RunBuildCommand()
