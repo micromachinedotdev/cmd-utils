@@ -79,8 +79,22 @@ It performs the following steps:
 		start := time.Now()
 		lib.LogWithColor(lib.Cyan, "Running `micromachine build`...")
 
-		if bundler.BuildScript != "" {
-			bundler.RunBuildCommand()
+		switch true {
+		case lib.IsNextJS(rootDir):
+			// Run open-next-build
+			start := time.Now()
+			lib.LogWithColor(lib.Default, "Running `opennextjs-cloudflare build`...")
+			err := bundler.RunExecutableCommand("@opennextjs/cloudflare", "build")
+			if err != nil {
+				lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+				os.Exit(1)
+			}
+			elapsed := time.Since(start)
+			lib.LogWithColor(lib.Success, fmt.Sprintf("✓ Completed `opennextjs-cloudflare build` in %s", elapsed))
+		default:
+			if bundler.BuildScript != "" {
+				bundler.RunBuildCommand()
+			}
 		}
 
 		bundler.Pack()

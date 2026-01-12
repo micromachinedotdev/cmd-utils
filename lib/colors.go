@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -18,5 +18,6 @@ var Cyan = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))
 var Default = lipgloss.NewStyle()
 
 func LogWithColor(color lipgloss.Style, text string) {
-	fmt.Printf("%s %s\n", Gray.Render(time.Now().Format(time.TimeOnly)), color.Render(text))
+	log.SetFlags(0)
+	log.Printf("%s %s\n", Gray.Render(time.Now().Format(time.TimeOnly)), color.Render(text))
 }

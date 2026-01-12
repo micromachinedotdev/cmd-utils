@@ -37,6 +37,9 @@ func (b *Bundle) Pack() {
 	shouldBundle := IsOpenNext(b.WrangleConfig) || b.ShouldBundle
 
 	if shouldBundle {
+		start := time.Now()
+		LogWithColor(Cyan, fmt.Sprintf("Bundling application..."))
+
 		var warnedPackages = make(map[string][]string)
 
 		var cfPaths = make(map[string]struct{})
@@ -146,7 +149,8 @@ func (b *Bundle) Pack() {
 		for path, importers := range warnedPackages {
 			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
-
+		elapsed := time.Since(start)
+		LogWithColor(Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
 	}
 
 	now := time.Now()
@@ -160,6 +164,8 @@ func (b *Bundle) Pack() {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
 				os.Exit(1)
 			}
+			elapsed := time.Since(now)
+			LogWithColor(Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 		} else if !errors.Is(err, os.ErrNotExist) {
 			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(1)
@@ -173,22 +179,53 @@ func (b *Bundle) Pack() {
 			os.Exit(1)
 		}
 	}
-	elapsed := time.Since(now)
-	LogWithColor(Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
+
 }
 
 func (b *Bundle) RunBuildCommand() {
+	cmdName := b.PackageManager + " run " + b.BuildScript
+	start := time.Now()
+	LogWithColor(Default, fmt.Sprintf("Running `%s`...", cmdName))
+	err := b.RunCommand(b.PackageManager, "run", b.BuildScript)
+
+	if err != nil {
+		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		os.Exit(1)
+	}
+	elapsed := time.Since(start)
+	LogWithColor(Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
+}
+
+func (b *Bundle) RunExecutableCommand(args ...string) error {
+	switch b.PackageManager {
+	case "npm":
+		return b.RunCommand("npx", args...)
+	case "yarn":
+		args = append([]string{"dlx"}, args...)
+		return b.RunCommand("yarn", args...)
+	case "pnpm":
+		args = append([]string{"dlx"}, args...)
+		return b.RunCommand("pnpm", args...)
+	case "bun":
+		return b.RunCommand("bunx", args...)
+	}
+
+	return fmt.Errorf("invalid package manager %s", b.PackageManager)
+}
+
+func (b *Bundle) RunCommand(name string, args ...string) error {
 	// Capture stdout and stderr separately
-	cmd := exec.Command(b.PackageManager, "run", b.BuildScript)
+	cmd := exec.Command(name, args...)
 	cmd.Dir = b.RootDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 
 	if err != nil {
-		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 func (b *Bundle) GetOutputDir() string {
