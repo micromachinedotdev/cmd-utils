@@ -38,7 +38,7 @@ func (b *Bundle) Pack() {
 
 	if shouldBundle {
 		start := time.Now()
-		LogWithColor(Cyan, fmt.Sprintf("Bundling application..."))
+		LogWithColor(Cyan, "Bundling application...")
 
 		var warnedPackages = make(map[string][]string)
 
