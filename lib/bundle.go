@@ -173,7 +173,7 @@ func (b *Bundle) Pack() {
 	}
 
 	if !shouldBundle {
-		err := copyDir(b.RootDir+"/"+strings.TrimPrefix(b.ModulePath, "/"), b.GetModuleDir())
+		err := copyDir(filepath.Join(b.RootDir, "/"+strings.TrimPrefix(b.ModulePath, "/")), b.GetModuleDir())
 		if err != nil {
 			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(1)
