@@ -158,8 +158,9 @@ func (b *Bundle) Pack() {
 	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
 		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
 			LogWithColor(Default, "Copying assets...")
-			modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
-			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
+			//modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
+
+			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{})
 
 			if err != nil {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
