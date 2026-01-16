@@ -158,7 +158,8 @@ func (b *Bundle) Pack() {
 	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
 		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
 			LogWithColor(Default, "Copying assets...")
-			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir())
+			modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
+			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
 
 			if err != nil {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
@@ -231,7 +232,7 @@ func (b *Bundle) GetAssetDir() string {
 	return filepath.Join(b.RootDir, ".micromachine/assets")
 }
 
-func copyDir(src, dst string) error {
+func copyDir(src, dst string, ignorePath []string) error {
 
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -239,6 +240,17 @@ func copyDir(src, dst string) error {
 		}
 		rel, _ := filepath.Rel(src, path)
 		target := filepath.Join(dst, rel)
+
+		for _, p := range ignorePath {
+			pathRel, err := filepath.Rel(src, p)
+			if err != nil {
+				continue
+			}
+
+			if strings.HasPrefix(rel, pathRel) {
+				return nil
+			}
+		}
 
 		if d.IsDir() {
 			return os.MkdirAll(target, 0755)
