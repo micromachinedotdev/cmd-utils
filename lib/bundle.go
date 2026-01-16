@@ -107,17 +107,18 @@ func (b *Bundle) Pack() {
 				externalFilesPlugin.New(),
 				cloudflarePlugin,
 			},
-			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
-			Outdir:        b.GetModuleDir(),
-			AbsWorkingDir: absDir,
-			Bundle:        true,
-			Write:         true,
-			Splitting:     false,
-			LogLevel:      api.LogLevelSilent,
-			Format:        api.FormatESModule,
-			Platform:      api.PlatformNeutral,
-			TreeShaking:   api.TreeShakingTrue,
-			Loader:        map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
+			EntryPoints:    []string{strings.TrimPrefix(b.ModulePath, "/")},
+			Outdir:         b.GetModuleDir(),
+			AbsWorkingDir:  absDir,
+			Bundle:         true,
+			Write:          true,
+			AllowOverwrite: true,
+			Splitting:      false,
+			LogLevel:       api.LogLevelSilent,
+			Format:         api.FormatESModule,
+			Platform:       api.PlatformNeutral,
+			TreeShaking:    api.TreeShakingTrue,
+			Loader:         map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Target modern runtime (Cloudflare Workers)
 			Target: api.ESNext,
@@ -158,9 +159,8 @@ func (b *Bundle) Pack() {
 	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
 		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
 			LogWithColor(Default, "Copying assets...")
-			//modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
-
-			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{})
+			modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
+			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
 
 			if err != nil {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))

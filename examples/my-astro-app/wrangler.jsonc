@@ -12,8 +12,8 @@
 		"global_fetch_strictly_public"
 	],
 	"assets": {
-		"binding": ".micromachine/assets",
-		"directory": "./dist"
+		"binding": "ASSETS",
+		"directory": ".micromachine/assets"
 	},
 	"observability": {
 		"enabled": true
