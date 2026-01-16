@@ -1,0 +1,27 @@
+{
+	"name": "my-astro-app",
+	"type": "module",
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "astro dev",
+		"start": "astro dev",
+		"build": "astro build",
+		"preview": "astro build && wrangler dev",
+		"astro": "astro",
+		"deploy": "astro build && wrangler deploy",
+		"cf-typegen": "wrangler types"
+	},
+	"dependencies": {
+		"@astrojs/cloudflare": "^12.6.12",
+		"@astrojs/starlight": "^0.37.3",
+		"astro": "^5.6.1",
+		"sharp": "^0.34.2"
+	},
+	"packageManager": "pnpm@10.26.1+sha512.664074abc367d2c9324fdc18037097ce0a8f126034160f709928e9e9f95d98714347044e5c3164d65bd5da6c59c6be362b107546292a8eecb7999196e5ce58fa",
+	"devDependencies": {
+		"@cloudflare/unenv-preset": "^2.10.0",
+		"@types/node": "^25.0.9",
+		"unenv": "2.0.0-rc.24",
+		"wrangler": "^4.59.2"
+	}
+}

@@ -27,12 +27,18 @@ type Bundle struct {
 }
 
 func (b *Bundle) Pack() {
-	//err := os.MkdirAll(b.GetOutputDir(), 0755)
-	//
-	//if err != nil {
-	//	LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-	//	os.Exit(1)
-	//}
+	absDir, err := filepath.Abs(b.RootDir)
+	if err != nil {
+		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		os.Exit(1)
+	}
+
+	err = os.MkdirAll(filepath.Join(absDir, b.GetOutputDir()), 0755)
+
+	if err != nil {
+		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		os.Exit(1)
+	}
 
 	shouldBundle := IsOpenNext(b.WrangleConfig) || b.ShouldBundle
 
@@ -53,12 +59,6 @@ func (b *Bundle) Pack() {
 						return api.OnResolveResult{External: true}, nil
 					})
 			},
-		}
-
-		absDir, err := filepath.Abs(b.RootDir)
-		if err != nil {
-			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
 		}
 
 		nodejsHybridPlugin := plugins.NodeJsHybridPlugin{
@@ -156,9 +156,9 @@ func (b *Bundle) Pack() {
 	now := time.Now()
 
 	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
-		if _, err := os.Stat(b.AssetPath); err == nil {
+		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
 			LogWithColor(Default, "Copying assets...")
-			err = copyDir(filepath.Join(b.RootDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir())
+			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir())
 
 			if err != nil {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
@@ -171,15 +171,6 @@ func (b *Bundle) Pack() {
 			os.Exit(1)
 		}
 	}
-
-	if !shouldBundle {
-		err := copyDir(filepath.Join(b.RootDir, "/"+strings.TrimPrefix(b.ModulePath, "/")), b.GetModuleDir())
-		if err != nil {
-			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
-		}
-	}
-
 }
 
 func (b *Bundle) RunBuildCommand() {
@@ -241,6 +232,7 @@ func (b *Bundle) GetAssetDir() string {
 }
 
 func copyDir(src, dst string) error {
+
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
