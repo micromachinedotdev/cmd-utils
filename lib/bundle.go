@@ -101,20 +101,19 @@ func (b *Bundle) Pack() {
 			}
 		}
 
-		fmt.Println(b.WrangleConfig, b.ModulePath)
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
 				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
 				externalFilesPlugin.New(),
 				cloudflarePlugin,
 			},
-			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
-			Outdir:        b.GetModuleDir(),
-			AbsWorkingDir: absDir,
-			Bundle:        true,
-			Write:         true,
-			// AllowOverwrite: true,
-			Splitting: false,
+			EntryPoints:    []string{strings.TrimPrefix(b.ModulePath, "/")},
+			Outdir:         b.GetModuleDir(),
+			AbsWorkingDir:  absDir,
+			Bundle:         true,
+			Write:          true,
+			AllowOverwrite: true,
+			Splitting:      false,
 			// LogLevel:       api.LogLevelSilent,
 			Format:      api.FormatESModule,
 			Platform:    api.PlatformNeutral,
@@ -150,6 +149,16 @@ func (b *Bundle) Pack() {
 		// Later, after build:
 		for path, importers := range warnedPackages {
 			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
+		}
+
+		cmd := exec.Command("sh", "-c", "ls -la")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+
+		if err != nil {
+			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+			os.Exit(1)
 		}
 		elapsed := time.Since(start)
 		LogWithColor(Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
