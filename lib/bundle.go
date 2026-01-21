@@ -101,7 +101,7 @@ func (b *Bundle) Pack() {
 			}
 		}
 
-		fmt.Println(b.WrangleConfig)
+		fmt.Println(b.WrangleConfig, b.ModulePath)
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
 				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
