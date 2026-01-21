@@ -101,24 +101,25 @@ func (b *Bundle) Pack() {
 			}
 		}
 
+		fmt.Println(json.Marshal(b.WrangleConfig))
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
 				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
 				externalFilesPlugin.New(),
 				cloudflarePlugin,
 			},
-			EntryPoints:    []string{strings.TrimPrefix(b.ModulePath, "/")},
-			Outdir:         b.GetModuleDir(),
-			AbsWorkingDir:  absDir,
-			Bundle:         true,
-			Write:          true,
-			AllowOverwrite: true,
-			Splitting:      false,
-			LogLevel:       api.LogLevelSilent,
-			Format:         api.FormatESModule,
-			Platform:       api.PlatformNeutral,
-			TreeShaking:    api.TreeShakingTrue,
-			Loader:         map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
+			EntryPoints:   []string{strings.TrimPrefix(b.ModulePath, "/")},
+			Outdir:        b.GetModuleDir(),
+			AbsWorkingDir: absDir,
+			Bundle:        true,
+			Write:         true,
+			// AllowOverwrite: true,
+			Splitting: false,
+			// LogLevel:       api.LogLevelSilent,
+			Format:      api.FormatESModule,
+			Platform:    api.PlatformNeutral,
+			TreeShaking: api.TreeShakingTrue,
+			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Target modern runtime (Cloudflare Workers)
 			Target: api.ESNext,
