@@ -114,11 +114,11 @@ func (b *Bundle) Pack() {
 			Write:          true,
 			AllowOverwrite: true,
 			Splitting:      false,
-			// LogLevel:       api.LogLevelSilent,
-			Format:      api.FormatESModule,
-			Platform:    api.PlatformNeutral,
-			TreeShaking: api.TreeShakingTrue,
-			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
+			LogLevel:       api.LogLevelInfo,
+			Format:         api.FormatESModule,
+			Platform:       api.PlatformNeutral,
+			TreeShaking:    api.TreeShakingTrue,
+			Loader:         map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Target modern runtime (Cloudflare Workers)
 			Target: api.ESNext,
