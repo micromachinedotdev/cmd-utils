@@ -91,7 +91,7 @@ func (b *Bundle) Pack() {
 		compatibilityFlags := make([]string, 0)
 
 		if b.WrangleConfig["compatibility_flags"] != nil {
-			if flags, ok := b.WrangleConfig["compatibility_flags"].([]interface{}); ok {
+			if flags, ok := b.WrangleConfig["compatibility_flags"].([]any); ok {
 				for _, v := range flags {
 					if flag, ok := v.(string); ok {
 						compatibilityFlags = append(compatibilityFlags, flag)
@@ -101,7 +101,7 @@ func (b *Bundle) Pack() {
 			}
 		}
 
-		fmt.Println(json.Marshal(b.WrangleConfig))
+		fmt.Println(b.WrangleConfig)
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
 				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
