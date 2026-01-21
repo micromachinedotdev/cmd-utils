@@ -79,13 +79,13 @@ func (b *Bundle) Pack() {
 
 		if !ok {
 			LogWithColor(Fail, "✗ Invalid wrangler configuration: missing or invalid compatibility_date")
-			os.Exit(1)
+			os.Exit(2)
 		}
 
 		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
 		if err != nil {
 			LogWithColor(Fail, "✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
-			os.Exit(1)
+			os.Exit(2)
 		}
 
 		compatibilityFlags := make([]string, 0)
@@ -114,11 +114,11 @@ func (b *Bundle) Pack() {
 			Write:          true,
 			AllowOverwrite: true,
 			Splitting:      false,
-			LogLevel:       api.LogLevelInfo,
-			Format:         api.FormatESModule,
-			Platform:       api.PlatformNeutral,
-			TreeShaking:    api.TreeShakingTrue,
-			Loader:         map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
+			// LogLevel:       api.LogLevelInfo,
+			Format:      api.FormatESModule,
+			Platform:    api.PlatformNeutral,
+			TreeShaking: api.TreeShakingTrue,
+			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Target modern runtime (Cloudflare Workers)
 			Target: api.ESNext,
@@ -143,7 +143,7 @@ func (b *Bundle) Pack() {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
 			}
 
-			os.Exit(1)
+			os.Exit(2)
 		}
 
 		// Later, after build:
@@ -151,15 +151,6 @@ func (b *Bundle) Pack() {
 			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
 
-		cmd := exec.Command("sh", "-c", "ls -la")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-
-		if err != nil {
-			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
-		}
 		elapsed := time.Since(start)
 		LogWithColor(Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
 	}
@@ -174,13 +165,13 @@ func (b *Bundle) Pack() {
 
 			if err != nil {
 				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-				os.Exit(1)
+				os.Exit(2)
 			}
 			elapsed := time.Since(now)
 			LogWithColor(Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 		} else if !errors.Is(err, os.ErrNotExist) {
 			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
+			os.Exit(2)
 		}
 	}
 }

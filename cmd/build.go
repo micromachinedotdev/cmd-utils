@@ -19,7 +19,7 @@ var shouldBundle bool
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Bundles the code for deployment",
-	Long: `The build command automates the preparation of your application for deployment. 
+	Long: `The build command automates the preparation of your application for deployment.
 It performs the following steps:
 1. Detects the project's package manager (Bun, PNPM, or Yarn).
 2. Locates and parses the wrangler configuration file (toml, json, or jsonc).
@@ -37,7 +37,7 @@ It performs the following steps:
 
 		if err != nil {
 			lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
+			os.Exit(2)
 		}
 
 		wranglerEntrypoint, _ := wrangler["main"].(string)
@@ -62,7 +62,7 @@ It performs the following steps:
 
 		if entrypoint == "" {
 			lib.LogWithColor(lib.Fail, "✗ No entrypoint not found")
-			os.Exit(1)
+			os.Exit(2)
 		}
 
 		bundler := lib.Bundle{
