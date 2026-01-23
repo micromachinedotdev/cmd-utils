@@ -1,4 +1,4 @@
-package lib
+package utils
 
 func HasAssets(conf map[string]any) bool {
 	if _, ok := conf["assets"]; ok {

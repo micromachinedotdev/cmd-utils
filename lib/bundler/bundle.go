@@ -1,4 +1,4 @@
-package lib
+package bundler
 
 import (
 	"encoding/json"
@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"micromachine.dev/cmd-utils/lib/plugins"
+	"micromachine.dev/cmd-utils/lib/bundler/plugins"
+	"micromachine.dev/cmd-utils/lib/utils"
 )
 
 type Bundle struct {
@@ -29,22 +30,22 @@ type Bundle struct {
 func (b *Bundle) Pack() {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
-		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 
 	err = os.MkdirAll(filepath.Join(absDir, b.GetOutputDir()), 0755)
 
 	if err != nil {
-		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 
-	shouldBundle := IsOpenNext(b.WrangleConfig) || b.ShouldBundle
+	shouldBundle := utils.IsOpenNext(b.WrangleConfig) || b.ShouldBundle
 
 	if shouldBundle {
 		start := time.Now()
-		LogWithColor(Cyan, "Bundling application...")
+		utils.LogWithColor(utils.Cyan, "Bundling application...")
 
 		var warnedPackages = make(map[string][]string)
 
@@ -78,13 +79,13 @@ func (b *Bundle) Pack() {
 		wranglerCDate, ok := b.WrangleConfig["compatibility_date"].(string)
 
 		if !ok {
-			LogWithColor(Fail, "✗ Invalid wrangler configuration: missing or invalid compatibility_date")
+			utils.LogWithColor(utils.Fail, "✗ Invalid wrangler configuration: missing or invalid compatibility_date")
 			os.Exit(2)
 		}
 
 		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
 		if err != nil {
-			LogWithColor(Fail, "✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
+			utils.LogWithColor(utils.Fail, "✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
 			os.Exit(2)
 		}
 
@@ -140,7 +141,7 @@ func (b *Bundle) Pack() {
 
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
-				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 			}
 
 			os.Exit(2)
@@ -148,29 +149,29 @@ func (b *Bundle) Pack() {
 
 		// Later, after build:
 		for path, importers := range warnedPackages {
-			LogWithColor(Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
+			utils.LogWithColor(utils.Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
 
 		elapsed := time.Since(start)
-		LogWithColor(Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
+		utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
 	}
 
 	now := time.Now()
 
-	if HasAssets(b.WrangleConfig) && b.AssetPath != "" {
+	if utils.HasAssets(b.WrangleConfig) && b.AssetPath != "" {
 		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
-			LogWithColor(Default, "Copying assets...")
+			utils.LogWithColor(utils.Default, "Copying assets...")
 			modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
 			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
 
 			if err != nil {
-				LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 				os.Exit(2)
 			}
 			elapsed := time.Since(now)
-			LogWithColor(Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
+			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 		} else if !errors.Is(err, os.ErrNotExist) {
-			LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(2)
 		}
 	}
@@ -179,15 +180,15 @@ func (b *Bundle) Pack() {
 func (b *Bundle) RunBuildCommand() {
 	cmdName := b.PackageManager + " run " + b.BuildScript
 	start := time.Now()
-	LogWithColor(Default, fmt.Sprintf("Running `%s`...", cmdName))
+	utils.LogWithColor(utils.Default, fmt.Sprintf("Running `%s`...", cmdName))
 	err := b.RunCommand(b.PackageManager, "run", b.BuildScript)
 
 	if err != nil {
-		LogWithColor(Fail, fmt.Sprintf("✗ %v", err))
+		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 	elapsed := time.Since(start)
-	LogWithColor(Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
+	utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
 }
 
 func (b *Bundle) RunExecutableCommand(args ...string) error {

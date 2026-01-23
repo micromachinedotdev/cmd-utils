@@ -1,4 +1,4 @@
-package lib
+package utils
 
 import (
 	"encoding/json"
@@ -58,6 +58,6 @@ func DetectWranglerFile(root *string) (map[string]any, error) {
 	default:
 		return nil, errors.New("invalid wrangler configuration file")
 	}
-	
+
 	return config, nil
 }

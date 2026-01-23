@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"micromachine.dev/cmd-utils/lib"
+	"micromachine.dev/cmd-utils/lib/bundler"
+	"micromachine.dev/cmd-utils/lib/utils"
 )
 
 var rootDir string
@@ -26,17 +27,17 @@ It performs the following steps:
 3. Executes the specified build script.
 4. Bundles the resulting assets and entrypoints into a deployable package.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		packageManager, err := lib.DetectPackageManager(&rootDir)
+		packageManager, err := utils.DetectPackageManager(&rootDir)
 
 		if err != nil {
-			lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(1)
 		}
 
-		wrangler, err := lib.DetectWranglerFile(&rootDir)
+		wrangler, err := utils.DetectWranglerFile(&rootDir)
 
 		if err != nil {
-			lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(2)
 		}
 
@@ -61,11 +62,11 @@ It performs the following steps:
 		}
 
 		if entrypoint == "" {
-			lib.LogWithColor(lib.Fail, "✗ No entrypoint not found")
+			utils.LogWithColor(utils.Fail, "✗ No entrypoint not found")
 			os.Exit(2)
 		}
 
-		bundler := lib.Bundle{
+		bundle := bundler.Bundle{
 			RootDir:        rootDir,
 			AssetPath:      assetPath,
 			ModulePath:     entrypoint,
@@ -77,41 +78,41 @@ It performs the following steps:
 		}
 
 		start := time.Now()
-		lib.LogWithColor(lib.Cyan, "Running `micromachine build`...")
+		utils.LogWithColor(utils.Cyan, "Running `micromachine build`...")
 
 		switch true {
-		case lib.IsNextJS(rootDir):
+		case utils.IsNextJS(rootDir):
 			// Run open-next-build
 			start := time.Now()
-			lib.LogWithColor(lib.Default, "Running `opennextjs-cloudflare build`...")
+			utils.LogWithColor(utils.Default, "Running `opennextjs-cloudflare build`...")
 
 			// Install opennextjs/cloudflare for next
-			err := bundler.RunCommand(*packageManager, "--silent", "install", "@opennextjs/cloudflare")
+			err := bundle.RunCommand(*packageManager, "--silent", "install", "@opennextjs/cloudflare")
 			if err != nil {
-				lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 				os.Exit(1)
 			}
 
 			// Run build
-			err = bundler.RunCommand(*packageManager, "opennextjs-cloudflare", "build")
+			err = bundle.RunCommand(*packageManager, "opennextjs-cloudflare", "build")
 			if err != nil {
-				lib.LogWithColor(lib.Fail, fmt.Sprintf("✗ %v", err))
+				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 				os.Exit(1)
 			}
 
 			// Calculate time elapsed.
 			elapsed := time.Since(start)
-			lib.LogWithColor(lib.Success, fmt.Sprintf("✓ Completed `opennextjs-cloudflare build` in %s", elapsed))
+			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `opennextjs-cloudflare build` in %s", elapsed))
 		default:
-			if bundler.BuildScript != "" {
-				bundler.RunBuildCommand()
+			if bundle.BuildScript != "" {
+				bundle.RunBuildCommand()
 			}
 		}
 
-		bundler.Pack()
+		bundle.Pack()
 		elapsed := time.Since(start)
 
-		lib.LogWithColor(lib.Success, fmt.Sprintf("✓ Completed `micromachine build` in %s", elapsed))
+		utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `micromachine build` in %s", elapsed))
 		os.Exit(0)
 	},
 }
