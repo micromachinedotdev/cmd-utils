@@ -83,11 +83,6 @@ func HasCloudflareVitePlugin(rootDir string) (checks *VitePluginChecks, ok bool)
 		Path:          path,
 	}
 
-	data, err = os.ReadFile(*path)
-	if err != nil {
-		return nil, false
-	}
-
 	plugins, err := DetectVitePluginsViaNode(rootDir)
 	if err != nil {
 		return nil, false

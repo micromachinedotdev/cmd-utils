@@ -42,7 +42,10 @@ It performs the following steps:
 			os.Exit(2)
 		}
 
-		wranglerEntrypoint := wrangler.Main
+		var wranglerEntrypoint string
+		if wrangler != nil && wrangler.Main != "" {
+			wranglerEntrypoint = wrangler.Main
+		}
 
 		var assetPath string
 
