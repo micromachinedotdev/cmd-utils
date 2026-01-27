@@ -30,18 +30,18 @@ type Bundle struct {
 	ShouldBundle        bool
 }
 
-func (b *Bundle) Pack() {
+func (b *Bundle) Pack() error {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
 		slog.Error(fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+		return fmt.Errorf("could not resolve absolute path: %w", err)
 	}
 
 	err = os.MkdirAll(filepath.Join(absDir, b.GetOutputDir()), 0755)
 
 	if err != nil {
 		slog.Error(fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+		return fmt.Errorf("could not create output directory: %w", err)
 	}
 
 	shouldBundle := utils.IsOpenNext(b.WranglerConfig) || b.ShouldBundle
@@ -97,7 +97,7 @@ func (b *Bundle) Pack() {
 		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
 		if err != nil {
 			slog.Error("✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
-			os.Exit(2)
+			return fmt.Errorf("invalid compatibility_date format: %w", err)
 		}
 
 		compatibilityFlags := b.WranglerConfig.CompatibilityFlags
@@ -151,7 +151,7 @@ func (b *Bundle) Pack() {
 				slog.Error(fmt.Sprintf("✗ %v", err))
 			}
 
-			os.Exit(2)
+			return fmt.Errorf("bundle failed with %d error(s)", len(result.Errors))
 		}
 
 		// Later, after build:
@@ -165,13 +165,13 @@ func (b *Bundle) Pack() {
 		err = os.MkdirAll(filepath.Join(absDir, b.GetModuleDir()), 0755)
 		if err != nil {
 			slog.Error(fmt.Sprintf("✗ %v", err))
-			os.Exit(1)
+			return fmt.Errorf("could not create module directory: %w", err)
 		}
 
 		err = copyDir(filepath.Dir(filepath.Join(absDir, modulePath)), filepath.Join(absDir, b.GetModuleDir()), []string{})
 		if err != nil {
 			slog.Error("✗ Could not copy module files", slog.Any("error", err))
-			os.Exit(2)
+			return fmt.Errorf("could not copy module files: %w", err)
 		}
 	}
 
@@ -187,14 +187,14 @@ func (b *Bundle) Pack() {
 			err = copyDir(dir, b.GetAssetDir(), []string{modulePathDir})
 			if err != nil {
 				slog.Error(fmt.Sprintf("✗ %v", err))
-				os.Exit(2)
+				return fmt.Errorf("could not copy assets: %w", err)
 			}
 
 			elapsed := time.Since(now)
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 		} else if !errors.Is(err, os.ErrNotExist) {
 			slog.Error(fmt.Sprintf("✗ %v", err))
-			os.Exit(2)
+			return fmt.Errorf("could not stat assets directory: %w", err)
 		}
 	} else if utils.HasAssets(b.WranglerConfig) && b.AssetPath != "" {
 		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
@@ -206,23 +206,25 @@ func (b *Bundle) Pack() {
 
 			if err != nil {
 				slog.Error(fmt.Sprintf("✗ %v", err))
-				os.Exit(2)
+				return fmt.Errorf("could not copy assets: %w", err)
 			}
 			elapsed := time.Since(now)
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 
 		} else if !errors.Is(err, os.ErrNotExist) {
 			slog.Error(fmt.Sprintf("✗ %v", err))
-			os.Exit(2)
+			return fmt.Errorf("could not stat assets directory: %w", err)
 		}
 	}
+
+	return nil
 }
 
-func (b *Bundle) RunBuildCommand() {
+func (b *Bundle) RunBuildCommand() error {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
 		slog.Error(fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+		return fmt.Errorf("could not resolve absolute path: %w", err)
 	}
 	costomConfig := utils.IncludeCloudflareVitePlugin(absDir, b.PackageManager)
 
@@ -238,7 +240,7 @@ func (b *Bundle) RunBuildCommand() {
 
 	if err != nil {
 		slog.Error(fmt.Sprintf("✗ %v", err))
-		os.Exit(1)
+		return fmt.Errorf("build command failed: %w", err)
 	}
 	elapsed := time.Since(start)
 	utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
@@ -248,12 +250,13 @@ func (b *Bundle) RunBuildCommand() {
 		wrangler, err := utils.DetectWranglerFile[utils.NormalizedWranglerConfig](&outputDir)
 		if err != nil {
 			slog.Error(fmt.Sprintf("✗ %v", err))
-			return
+			return err
 		}
 
 		b.BuildWranglerConfig = wrangler
 	}
 
+	return nil
 }
 
 func (b *Bundle) findModuleDir() string {

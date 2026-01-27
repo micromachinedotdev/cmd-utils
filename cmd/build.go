@@ -104,11 +104,19 @@ It performs the following steps:
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `opennextjs-cloudflare build` in %s", elapsed))
 		default:
 			if bundle.BuildScript != "" {
-				bundle.RunBuildCommand()
+				err := bundle.RunBuildCommand()
+				if err != nil {
+					return
+				}
 			}
 		}
 
-		bundle.Pack()
+		err = bundle.Pack()
+		if err != nil {
+			os.Exit(1)
+			return
+		}
+
 		elapsed := time.Since(start)
 
 		utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `micromachine build` in %s", elapsed))
