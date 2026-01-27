@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,31 +19,42 @@ import (
 )
 
 type Bundle struct {
-	RootDir        string
-	ModulePath     string
-	PackageManager string
-	AssetPath      string
-	BuildScript    string
-	Environment    string
-	WrangleConfig  map[string]any
-	ShouldBundle   bool
+	RootDir             string
+	ModulePath          string
+	PackageManager      string
+	AssetPath           string
+	BuildScript         string
+	Environment         string
+	WranglerConfig      *utils.WranglerConfig
+	BuildWranglerConfig *utils.NormalizedWranglerConfig
+	ShouldBundle        bool
 }
 
 func (b *Bundle) Pack() {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
-		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 
 	err = os.MkdirAll(filepath.Join(absDir, b.GetOutputDir()), 0755)
 
 	if err != nil {
-		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 
-	shouldBundle := utils.IsOpenNext(b.WrangleConfig) || b.ShouldBundle
+	shouldBundle := utils.IsOpenNext(b.WranglerConfig) || b.ShouldBundle
+
+	if b.BuildWranglerConfig != nil {
+		shouldBundle = !b.BuildWranglerConfig.NoBundle
+	}
+
+	modulePath := b.ModulePath
+	if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.Main != "" {
+		outBase := b.findModuleDir()
+		modulePath = filepath.Join(outBase, b.BuildWranglerConfig.Main)
+	}
 
 	if shouldBundle {
 		start := time.Now()
@@ -76,45 +89,40 @@ func (b *Bundle) Pack() {
 			},
 		}
 
-		wranglerCDate, ok := b.WrangleConfig["compatibility_date"].(string)
-
-		if !ok {
-			utils.LogWithColor(utils.Fail, "✗ Invalid wrangler configuration: missing or invalid compatibility_date")
-			os.Exit(2)
+		wranglerCDate := b.WranglerConfig.CompatibilityDate
+		if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.CompatibilityDate != "" {
+			wranglerCDate = b.BuildWranglerConfig.CompatibilityDate
 		}
 
 		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
 		if err != nil {
-			utils.LogWithColor(utils.Fail, "✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
+			slog.Error("✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
 			os.Exit(2)
 		}
 
-		compatibilityFlags := make([]string, 0)
-
-		if b.WrangleConfig["compatibility_flags"] != nil {
-			if flags, ok := b.WrangleConfig["compatibility_flags"].([]any); ok {
-				for _, v := range flags {
-					if flag, ok := v.(string); ok {
-						compatibilityFlags = append(compatibilityFlags, flag)
-					}
-				}
-
-			}
+		compatibilityFlags := b.WranglerConfig.CompatibilityFlags
+		if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.CompatibilityFlags != nil {
+			compatibilityFlags = b.BuildWranglerConfig.CompatibilityFlags
 		}
+
+		external := []string{"__STATIC_CONTENT_MANIFEST"}
 
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
-				nodejsHybridPlugin.New(compatibilityDate.Format(time.DateOnly), compatibilityFlags),
+				nodejsHybridPlugin.New(
+					compatibilityDate.Format(time.DateOnly),
+					compatibilityFlags,
+				),
 				externalFilesPlugin.New(),
 				cloudflarePlugin,
 			},
-			EntryPoints:    []string{strings.TrimPrefix(b.ModulePath, "/")},
+			EntryPoints:    []string{modulePath},
 			Outdir:         b.GetModuleDir(),
 			AbsWorkingDir:  absDir,
 			Bundle:         true,
 			Write:          true,
 			AllowOverwrite: true,
-			Splitting:      false,
+			Splitting:      true,
 			// LogLevel:       api.LogLevelInfo,
 			Format:      api.FormatESModule,
 			Platform:    api.PlatformNeutral,
@@ -122,14 +130,13 @@ func (b *Bundle) Pack() {
 			Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".mjs": api.LoaderJSX, ".cjs": api.LoaderJSX},
 
 			// Target modern runtime (Cloudflare Workers)
-			Target: api.ESNext,
-
-			External:          []string{"__STATIC_CONTENT_MANIFEST"},
+			Target:            api.ESNext,
+			External:          external,
 			MinifyWhitespace:  true,
 			MinifyIdentifiers: true,
 			MinifySyntax:      true,
 			KeepNames:         true,
-			Metafile:          true,
+			Metafile:          false,
 			Sourcemap:         api.SourceMapLinked,
 			Conditions:        []string{"workerd", "worker", "browser"},
 			Define: map[string]string{
@@ -141,7 +148,7 @@ func (b *Bundle) Pack() {
 
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
-				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+				slog.Error(fmt.Sprintf("✗ %v", err))
 			}
 
 			os.Exit(2)
@@ -149,46 +156,142 @@ func (b *Bundle) Pack() {
 
 		// Later, after build:
 		for path, importers := range warnedPackages {
-			utils.LogWithColor(utils.Warning, fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
+			slog.Warn(fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
 		}
 
 		elapsed := time.Since(start)
 		utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Bundling completed in %s", elapsed))
+	} else {
+		err = os.MkdirAll(filepath.Join(absDir, b.GetModuleDir()), 0755)
+		if err != nil {
+			slog.Error(fmt.Sprintf("✗ %v", err))
+			os.Exit(1)
+		}
+
+		err = copyDir(filepath.Dir(filepath.Join(absDir, modulePath)), filepath.Join(absDir, b.GetModuleDir()), []string{})
+		if err != nil {
+			slog.Error("✗ Could not copy module files", slog.Any("error", err))
+			os.Exit(2)
+		}
 	}
 
 	now := time.Now()
 
-	if utils.HasAssets(b.WrangleConfig) && b.AssetPath != "" {
-		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
+	if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.Assets != nil && b.BuildWranglerConfig.Assets.Directory != "" {
+		dir := filepath.Join(absDir, filepath.Dir(modulePath), b.BuildWranglerConfig.Assets.Directory)
+		if _, err := os.Stat(dir); err == nil {
+
 			utils.LogWithColor(utils.Default, "Copying assets...")
+
+			modulePathDir := filepath.Join(absDir, filepath.Dir(modulePath))
+			err = copyDir(dir, b.GetAssetDir(), []string{modulePathDir})
+			if err != nil {
+				slog.Error(fmt.Sprintf("✗ %v", err))
+				os.Exit(2)
+			}
+
+			elapsed := time.Since(now)
+			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
+		} else if !errors.Is(err, os.ErrNotExist) {
+			slog.Error(fmt.Sprintf("✗ %v", err))
+			os.Exit(2)
+		}
+	} else if utils.HasAssets(b.WranglerConfig) && b.AssetPath != "" {
+		if _, err := os.Stat(filepath.Join(absDir, b.AssetPath)); err == nil {
+
+			utils.LogWithColor(utils.Default, "Copying assets...")
+
 			modulePathDir := filepath.Join(absDir, filepath.Dir(b.ModulePath))
 			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
 
 			if err != nil {
-				utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+				slog.Error(fmt.Sprintf("✗ %v", err))
 				os.Exit(2)
 			}
 			elapsed := time.Since(now)
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
+
 		} else if !errors.Is(err, os.ErrNotExist) {
-			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+			slog.Error(fmt.Sprintf("✗ %v", err))
 			os.Exit(2)
 		}
 	}
 }
 
 func (b *Bundle) RunBuildCommand() {
+	absDir, err := filepath.Abs(b.RootDir)
+	if err != nil {
+		slog.Error(fmt.Sprintf("✗ %v", err))
+		os.Exit(1)
+	}
+	costomConfig := utils.IncludeCloudflareVitePlugin(absDir, b.PackageManager)
+
 	cmdName := b.PackageManager + " run " + b.BuildScript
+
+	if costomConfig != nil {
+		cmdName = fmt.Sprintf("%s --config %s", cmdName, *costomConfig)
+	}
+
 	start := time.Now()
 	utils.LogWithColor(utils.Default, fmt.Sprintf("Running `%s`...", cmdName))
-	err := b.RunCommand(b.PackageManager, "run", b.BuildScript)
+	err = b.RunCommand(b.PackageManager, "run", b.BuildScript)
 
 	if err != nil {
-		utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("✗ %v", err))
 		os.Exit(1)
 	}
 	elapsed := time.Since(start)
 	utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
+
+	outputDir := filepath.Join(absDir, b.findModuleDir())
+	if outputDir != "" {
+		wrangler, err := utils.DetectWranglerFile[utils.NormalizedWranglerConfig](&outputDir)
+		if err != nil {
+			slog.Error(fmt.Sprintf("✗ %v", err))
+			return
+		}
+
+		b.BuildWranglerConfig = wrangler
+	}
+
+}
+
+func (b *Bundle) findModuleDir() string {
+	absDir, err := filepath.Abs(b.RootDir)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	mainDir := filepath.Dir(b.WranglerConfig.Main)
+
+	paths := []string{
+		mainDir,
+		"dist/server",
+		".output/server",
+	}
+
+	// Check for generated deployment config (from framework builds)
+	deployConfigPath := filepath.Join(absDir, ".wrangler/deploy/config.json")
+	if data, err := os.ReadFile(deployConfigPath); err == nil {
+		var deployConfig struct {
+			ConfigPath string `json:"configPath"`
+		}
+		if json.Unmarshal(data, &deployConfig) == nil && deployConfig.ConfigPath != "" {
+			// Prepend the directory containing the generated config
+			generatedDir := filepath.Dir(filepath.Join(absDir, deployConfig.ConfigPath))
+			paths = slices.Insert(paths, 0, generatedDir)
+		}
+	}
+
+	for _, p := range paths {
+		pathWithAbsDir := filepath.Join(absDir, p)
+		if info, err := os.Stat(pathWithAbsDir); err == nil && info.IsDir() {
+			return p
+		}
+	}
+
+	return mainDir
 }
 
 func (b *Bundle) RunExecutableCommand(args ...string) error {
@@ -258,10 +361,13 @@ func copyDir(src, dst string, ignorePath []string) error {
 		if d.IsDir() {
 			return os.MkdirAll(target, 0755)
 		}
+
 		data, err := os.ReadFile(path)
 		if err != nil {
+
 			return err
 		}
+
 		info, _ := d.Info()
 		return os.WriteFile(target, data, info.Mode())
 	})

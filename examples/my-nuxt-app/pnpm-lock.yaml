@@ -18,6 +18,9 @@ importers:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.26)
     devDependencies:
+      '@cloudflare/unenv-preset':
+        specifier: ^2.11.0
+        version: 2.11.0(unenv@2.0.0-rc.24)(workerd@1.20260114.0)
       h3:
         specifier: 2.0.1-rc.8
         version: 2.0.1-rc.8
@@ -27,6 +30,9 @@ importers:
       nitropack:
         specifier: ^2.13.1
         version: 2.13.1
+      unenv:
+        specifier: 2.0.0-rc.24
+        version: 2.0.0-rc.24
       wrangler:
         specifier: ^4.59.2
         version: 4.59.2
@@ -180,6 +186,15 @@ packages:
     peerDependencies:
       unenv: 2.0.0-rc.24
       workerd: ^1.20251221.0
+    peerDependenciesMeta:
+      workerd:
+        optional: true
+
+  '@cloudflare/unenv-preset@2.11.0':
+    resolution: {integrity: sha512-z3hxFajL765VniNPGV0JRStZolNz63gU3B3AktwoGdDlnQvz5nP+Ah4RL04PONlZQjwmDdGHowEStJ94+RsaJg==}
+    peerDependencies:
+      unenv: 2.0.0-rc.24
+      workerd: ^1.20260115.0
     peerDependenciesMeta:
       workerd:
         optional: true
@@ -3752,6 +3767,12 @@ snapshots:
   '@cloudflare/kv-asset-handler@0.4.2': {}
 
   '@cloudflare/unenv-preset@2.10.0(unenv@2.0.0-rc.24)(workerd@1.20260114.0)':
+    dependencies:
+      unenv: 2.0.0-rc.24
+    optionalDependencies:
+      workerd: 1.20260114.0
+
+  '@cloudflare/unenv-preset@2.11.0(unenv@2.0.0-rc.24)(workerd@1.20260114.0)':
     dependencies:
       unenv: 2.0.0-rc.24
     optionalDependencies:

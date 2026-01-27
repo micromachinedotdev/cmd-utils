@@ -3,11 +3,11 @@ package utils
 import "testing"
 
 func TestWranglerConfigForOpenNext(t *testing.T) {
-	conf := map[string]any{
-		"main": ".open-next/worker.js",
-		"name": "testing",
-		"assets": map[string]any{
-			"directory": ".open-next/assets",
+	conf := &WranglerConfig{
+		Main: ".open-next/worker.js",
+		Name: "testing",
+		Assets: &AssetsConfig{
+			Directory: ".open-next/assets",
 		},
 	}
 	result := IsOpenNext(conf)
@@ -17,11 +17,11 @@ func TestWranglerConfigForOpenNext(t *testing.T) {
 }
 
 func TestWranglerConfigForNonOpenNext(t *testing.T) {
-	conf := map[string]any{
-		"main": "dist/worker.js",
-		"name": "testing",
-		"assets": map[string]any{
-			"directory": "dis/assets",
+	conf := &WranglerConfig{
+		Main: "dist/worker.js",
+		Name: "testing",
+		Assets: &AssetsConfig{
+			Directory: "dis/assets",
 		},
 	}
 	result := IsOpenNext(conf)

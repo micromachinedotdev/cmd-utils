@@ -39,7 +39,7 @@ func TestWranglerDetection(t *testing.T) {
 					t.Error(err)
 				}
 			}
-			got, err := DetectWranglerFile(&dir)
+			got, err := DetectWranglerFile[WranglerConfig](&dir)
 
 			if err != nil {
 				t.Errorf("expected wrangler map, got error: %v", err)
@@ -51,9 +51,9 @@ func TestWranglerDetection(t *testing.T) {
 				return
 			}
 
-			name, ok := got["name"].(string)
+			name := got.Name
 
-			if !ok || name != "test" {
+			if name != "test" {
 				t.Errorf("Expected wrangler config `name` to be %s, got %s", "test", name)
 			}
 		})
@@ -62,7 +62,7 @@ func TestWranglerDetection(t *testing.T) {
 
 func TestMissingWranglerFile(t *testing.T) {
 	dir := os.TempDir()
-	_, err := DetectWranglerFile(&dir)
+	_, err := DetectWranglerFile[WranglerConfig](&dir)
 	if err == nil {
 		t.Error("Expected error when no wrangler file found")
 	}

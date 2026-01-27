@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"micromachine.dev/cmd-utils/lib/utils"
 )
 
 const requiredNodeBuiltInNamespace = "node-built-in-modules"
@@ -38,7 +38,7 @@ func (p *NodeJsHybridPlugin) New(compatibilityDate string, compatibilityFlags []
 			cfg, err := p.getUnenvConfig(p.BasePath, compatibilityDate, compatibilityFlags)
 
 			if err != nil {
-				utils.LogWithColor(utils.Fail, err.Error())
+				slog.Error(err.Error())
 				os.Exit(2)
 			}
 
@@ -263,7 +263,7 @@ func (p *NodeJsHybridPlugin) handleNodeJSGlobals(build api.PluginBuild, inject m
 
 	polyfillResolved, err := resolvePolyfills(p.BasePath, polyfill)
 	if err != nil {
-		utils.LogWithColor(utils.Fail, err.Error())
+		slog.Error(err.Error())
 		os.Exit(2)
 	}
 
@@ -278,13 +278,13 @@ func (p *NodeJsHybridPlugin) handleNodeJSGlobals(build api.PluginBuild, inject m
 	build.OnLoad(api.OnLoadOptions{Filter: unenvVirtualModuleReStr}, func(args api.OnLoadArgs) (api.OnLoadResult, error) {
 		module := virtualModulePathToSpecifier[args.Path]
 		if module == "" {
-			utils.LogWithColor(utils.Fail, fmt.Sprintf(`Expected %s to be mapped to a module specifier`, args.Path))
+			slog.Error(fmt.Sprintf(`Expected %s to be mapped to a module specifier`, args.Path))
 			os.Exit(2)
 		}
 		injects := injectsByModule[module]
 
 		if len(injects) == 0 {
-			utils.LogWithColor(utils.Fail, fmt.Sprintf(`Expected %s to have at least one injected module`, module))
+			slog.Error(fmt.Sprintf(`Expected %s to have at least one injected module`, module))
 			os.Exit(2)
 		}
 

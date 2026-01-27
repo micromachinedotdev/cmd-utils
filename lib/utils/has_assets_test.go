@@ -3,11 +3,11 @@ package utils
 import "testing"
 
 func TestHasAssets(t *testing.T) {
-	conf := map[string]any{
-		"main": ".open-next/worker.js",
-		"name": "testing",
-		"assets": map[string]any{
-			"directory": ".open-next/assets",
+	conf := &WranglerConfig{
+		Main: ".open-next/worker.js",
+		Name: "testing",
+		Assets: &AssetsConfig{
+			Directory: ".open-next/assets",
 		},
 	}
 
@@ -18,9 +18,9 @@ func TestHasAssets(t *testing.T) {
 }
 
 func TestWranglerConfigWithoutAssets(t *testing.T) {
-	conf := map[string]any{
-		"main": "dist/worker.js",
-		"name": "testing",
+	conf := &WranglerConfig{
+		Main: ".open-next/worker.js",
+		Name: "testing",
 	}
 	result := HasAssets(conf)
 	if result != false {

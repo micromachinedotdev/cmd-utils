@@ -22,8 +22,8 @@ importers:
         version: 0.34.5
     devDependencies:
       '@cloudflare/unenv-preset':
-        specifier: ^2.10.0
-        version: 2.10.0(unenv@2.0.0-rc.24)(workerd@1.20260114.0)
+        specifier: ^2.11.0
+        version: 2.11.0(unenv@2.0.0-rc.24)(workerd@1.20251118.0)
       '@types/node':
         specifier: ^25.0.9
         version: 25.0.9
@@ -113,6 +113,15 @@ packages:
     peerDependencies:
       unenv: 2.0.0-rc.24
       workerd: ^1.20251221.0
+    peerDependenciesMeta:
+      workerd:
+        optional: true
+
+  '@cloudflare/unenv-preset@2.11.0':
+    resolution: {integrity: sha512-z3hxFajL765VniNPGV0JRStZolNz63gU3B3AktwoGdDlnQvz5nP+Ah4RL04PONlZQjwmDdGHowEStJ94+RsaJg==}
+    peerDependencies:
+      unenv: 2.0.0-rc.24
+      workerd: ^1.20260115.0
     peerDependenciesMeta:
       workerd:
         optional: true
@@ -2674,6 +2683,12 @@ snapshots:
       unenv: 2.0.0-rc.24
     optionalDependencies:
       workerd: 1.20260114.0
+
+  '@cloudflare/unenv-preset@2.11.0(unenv@2.0.0-rc.24)(workerd@1.20251118.0)':
+    dependencies:
+      unenv: 2.0.0-rc.24
+    optionalDependencies:
+      workerd: 1.20251118.0
 
   '@cloudflare/unenv-preset@2.7.11(unenv@2.0.0-rc.24)(workerd@1.20251118.0)':
     dependencies:

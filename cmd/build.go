@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -30,25 +31,23 @@ It performs the following steps:
 		packageManager, err := utils.DetectPackageManager(&rootDir)
 
 		if err != nil {
-			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
+			slog.Error(fmt.Sprintf("✗ %v", err))
 			os.Exit(1)
 		}
 
-		wrangler, err := utils.DetectWranglerFile(&rootDir)
+		wrangler, err := utils.DetectWranglerFile[utils.WranglerConfig](&rootDir)
 
 		if err != nil {
 			utils.LogWithColor(utils.Fail, fmt.Sprintf("✗ %v", err))
 			os.Exit(2)
 		}
 
-		wranglerEntrypoint, _ := wrangler["main"].(string)
+		wranglerEntrypoint := wrangler.Main
 
 		var assetPath string
 
-		if assets, ok := wrangler["assets"].(map[string]any); ok {
-			if dir, ok := assets["directory"].(string); ok {
-				assetPath = dir
-			}
+		if wrangler != nil && wrangler.Assets != nil && wrangler.Assets.Directory != "" {
+			assetPath = wrangler.Assets.Directory
 		}
 
 		var entrypoint string
@@ -62,7 +61,7 @@ It performs the following steps:
 		}
 
 		if entrypoint == "" {
-			utils.LogWithColor(utils.Fail, "✗ No entrypoint not found")
+			slog.Error("✗ No entrypoint not found")
 			os.Exit(2)
 		}
 
@@ -73,7 +72,7 @@ It performs the following steps:
 			PackageManager: *packageManager,
 			BuildScript:    buildScript,
 			Environment:    buildEnv,
-			WrangleConfig:  wrangler,
+			WranglerConfig: wrangler,
 			ShouldBundle:   shouldBundle,
 		}
 
