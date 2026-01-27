@@ -226,12 +226,13 @@ func (b *Bundle) RunBuildCommand() error {
 		slog.Error(fmt.Sprintf("✗ %v", err))
 		return fmt.Errorf("could not resolve absolute path: %w", err)
 	}
-	costomConfig := utils.IncludeCloudflareVitePlugin(absDir, b.PackageManager)
+
+	customConfig := utils.IncludeCloudflareVitePlugin(absDir, b.PackageManager)
 
 	cmdName := b.PackageManager + " run " + b.BuildScript
 
-	if costomConfig != nil {
-		cmdName = fmt.Sprintf("%s --config %s", cmdName, *costomConfig)
+	if customConfig != nil {
+		cmdName = fmt.Sprintf("%s --config %s", cmdName, *customConfig)
 	}
 
 	start := time.Now()
