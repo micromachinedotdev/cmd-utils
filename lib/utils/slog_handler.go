@@ -31,7 +31,7 @@ func (h *ColorHandler) Handle(_ context.Context, r slog.Record) error {
 	case slog.LevelDebug:
 		color = Muted
 	case slog.LevelInfo:
-		color = Info
+		color = Default
 	case slog.LevelWarn:
 		color = Warning
 	case slog.LevelError:
@@ -44,6 +44,14 @@ func (h *ColorHandler) Handle(_ context.Context, r slog.Record) error {
 	defer h.mu.Unlock()
 
 	msg := Gray.Render(r.Time.Format(time.TimeOnly)) + " " + color.Render(r.Message)
+
+	if r.Level == slog.LevelWarn {
+		msg = Gray.Render(r.Time.Format(time.TimeOnly)) + " " + WarningWithBackground.Render("WARNING") + " " + color.Render(r.Message)
+	}
+
+	if r.Level == slog.LevelError {
+		msg = Gray.Render(r.Time.Format(time.TimeOnly)) + " " + ErrorWithBackground.Render("✗ ERROR") + " " + color.Render(r.Message)
+	}
 
 	for _, a := range h.attrs {
 		msg += " " + Muted.Render(a.Key) + "=" + fmt.Sprintf("%v", a.Value.Any())

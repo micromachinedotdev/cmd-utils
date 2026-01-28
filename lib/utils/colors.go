@@ -2,7 +2,6 @@ package utils
 
 import (
 	"log"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -17,7 +16,19 @@ var Magenta = lipgloss.NewStyle().Foreground(lipgloss.Color("13"))
 var Cyan = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))
 var Default = lipgloss.NewStyle()
 
+var WarningWithBackground = lipgloss.NewStyle().
+	// Bold(true).
+	Foreground(lipgloss.Color("#000000")). // black text for contrast
+	Background(lipgloss.Color("#ff9300")).
+	Padding(0, 1)
+
+var ErrorWithBackground = lipgloss.NewStyle().
+	// Bold(true).
+	Foreground(lipgloss.Color("#000000")). // black text for contrast
+	Background(lipgloss.Color("196")).
+	Padding(0, 1)
+
 func LogWithColor(color lipgloss.Style, text string) {
 	log.SetFlags(0)
-	log.Printf("%s %s\n", Gray.Render(time.Now().Format(time.TimeOnly)), color.Render(text))
+	log.Printf("%s\n", color.Render(text))
 }

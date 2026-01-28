@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -61,41 +62,40 @@ type VitePluginChecks struct {
 	Path          *string
 }
 
-func HasCloudflareVitePlugin(rootDir string) (checks *VitePluginChecks, ok bool) {
-	path, ok := IsViteApp(rootDir)
-	if !ok {
-		return nil, false
-	}
-
+func HasCloudflareVitePlugin(rootDir string) (checks *VitePluginChecks, err error) {
 	data, err := os.ReadFile(filepath.Join(rootDir, "package.json"))
 	if err != nil {
-		return nil, false
+		return nil, err
 	}
 
 	var packageJSON PackageJSON
 	err = json.Unmarshal(data, &packageJSON)
 	if err != nil {
-		return nil, false
+		return checks, err
 	}
-
 	checks = &VitePluginChecks{
 		HasDependency: packageJSON.HasDependency("@cloudflare/vite-plugin"),
-		Path:          path,
 	}
+
+	path, ok := IsViteApp(rootDir)
+	if !ok {
+		return checks, errors.New("no vite app found")
+	}
+	checks.Path = path
 
 	plugins, err := DetectVitePluginsViaNode(rootDir)
 	if err != nil {
-		return nil, false
+		return checks, err
 	}
 
 	for _, plugin := range plugins {
 		if strings.Contains(plugin, "vite-plugin-cloudflare") || strings.HasPrefix(plugin, "vite-plugin-cloudflare") {
 			checks.IsPlugin = true
-			return checks, true
+			return checks, nil
 		}
 	}
 
-	return nil, false
+	return checks, nil
 }
 
 func DetectVitePluginsViaNode(projectDir string) ([]string, error) {
@@ -119,28 +119,27 @@ console.log(JSON.stringify(config.plugins.map(p => p.name)));
 }
 
 func IncludeCloudflareVitePlugin(rootDir, packageManager string) *string {
-	checks, ok := HasCloudflareVitePlugin(rootDir)
-	fmt.Println(checks, ok)
-	if ok || checks == nil {
+	checks, err := HasCloudflareVitePlugin(rootDir)
+	if err != nil {
 		return nil
 	}
 
 	if !checks.HasDependency {
-		slog.Warn("We couldn't find the @cloudflare/vite-plugin-cloudflare dependency in your package.json. Adding it now...")
-		cmd := exec.Command(packageManager, "install", "-D", "@cloudflare/vite-plugin-cloudflare")
+		slog.Warn("We couldn't find the @cloudflare/vite-plugin dependency in your package.json. Adding it now...")
+		cmd := exec.Command(packageManager, "install", "-D", "@cloudflare/vite-plugin")
 		cmd.Dir = rootDir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 
 		if err != nil {
-			slog.Error("Failed to add `@cloudflare/vite-plugin-cloudflare` vite plugin")
+			slog.Error("Failed to add `@cloudflare/vite-plugin` vite plugin")
 			os.Exit(1)
 		}
 	}
 
 	if !checks.IsPlugin {
-		slog.Warn("We couldn't find the @cloudflare/vite-plugin-cloudflare plugin in your vite.config.js. Adding it now...")
+		slog.Warn("We couldn't find the @cloudflare/vite-plugin plugin in your vite.config.js. Adding it now...")
 		return AddVitePlugin(rootDir, *checks.Path, packageManager)
 	}
 	return nil
@@ -148,21 +147,22 @@ func IncludeCloudflareVitePlugin(rootDir, packageManager string) *string {
 
 func AddVitePlugin(rootDir, configPath, packageManager string) *string {
 	script := fmt.Sprintf(`
-		import { cloudflare } from '@cloudflare/vite-plugin-cloudflare';
+		import { cloudflare } from '@cloudflare/vite-plugin';
 
 		import userConfig from '%s';
 		import { defineConfig, mergeConfig } from 'vite';
 
 		export default mergeConfig(userConfig, defineConfig({
-		plugins: [cloudflare()]
-	}));`, configPath)
+		plugins: [cloudflare({viteEnvironment: {name: 'ssr'}})]
+	}));`, filepath.Base(configPath))
 
 	path := filepath.Join(rootDir, "micromachine-vite.config.ts")
 	err := os.WriteFile(path, []byte(script), 0644)
 	if err != nil {
-		slog.Error("Could not not add `@cloudflare/vite-plugin-cloudflare` to your vite.config.ts")
+		slog.Error("Could not not add `@cloudflare/vite-plugin` to your vite.config.ts")
 		os.Exit(1)
 	}
 
-	return &path
+	file := filepath.Base(path)
+	return &file
 }

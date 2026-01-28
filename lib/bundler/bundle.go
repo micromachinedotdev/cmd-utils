@@ -33,14 +33,14 @@ type Bundle struct {
 func (b *Bundle) Pack() error {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
-		slog.Error(fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("%v", err))
 		return fmt.Errorf("could not resolve absolute path: %w", err)
 	}
 
 	err = os.MkdirAll(filepath.Join(absDir, b.GetOutputDir()), 0755)
 
 	if err != nil {
-		slog.Error(fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("%v", err))
 		return fmt.Errorf("could not create output directory: %w", err)
 	}
 
@@ -50,10 +50,14 @@ func (b *Bundle) Pack() error {
 		shouldBundle = !b.BuildWranglerConfig.NoBundle
 	}
 
+	// Get the module path
 	modulePath := b.ModulePath
 	if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.Main != "" {
-		outBase := b.findModuleDir()
-		modulePath = filepath.Join(outBase, b.BuildWranglerConfig.Main)
+		outBase, err := b.findModuleDir()
+		if err != nil {
+			return err
+		}
+		modulePath = filepath.Join(*outBase, b.BuildWranglerConfig.Main)
 	}
 
 	if shouldBundle {
@@ -96,7 +100,7 @@ func (b *Bundle) Pack() error {
 
 		compatibilityDate, err := time.Parse(time.DateOnly, wranglerCDate)
 		if err != nil {
-			slog.Error("✗ Invalid compatibility_date: must be in format YYYY-MM-DD")
+			slog.Error("Invalid compatibility_date: must be in format YYYY-MM-DD")
 			return fmt.Errorf("invalid compatibility_date format: %w", err)
 		}
 
@@ -106,6 +110,23 @@ func (b *Bundle) Pack() error {
 		}
 
 		external := []string{"__STATIC_CONTENT_MANIFEST"}
+
+		// Check if the entrypoint file exists
+		if _, err := os.Stat(filepath.Join(absDir, modulePath)); err != nil {
+			entrypointFile := b.WranglerConfig.Main
+			if b.BuildWranglerConfig != nil && b.BuildWranglerConfig.Main != "" {
+				entrypointFile = b.BuildWranglerConfig.Main
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				msg := fmt.Sprintf("The entry-point file at `%s` was not found.", entrypointFile)
+				slog.Error("" + msg)
+				return errors.New(msg)
+			}
+
+			msg := fmt.Sprintf("Could not find the entry-point file at `%s`.", entrypointFile)
+			slog.Error(""+msg, slog.Any("error", err))
+			return fmt.Errorf(msg+": %w", err)
+		}
 
 		result := api.Build(api.BuildOptions{
 			Plugins: []api.Plugin{
@@ -148,7 +169,7 @@ func (b *Bundle) Pack() error {
 
 		if len(result.Errors) > 0 {
 			for _, err := range result.Errors {
-				slog.Error(fmt.Sprintf("✗ %v", err))
+				slog.Error("" + err.Text)
 			}
 
 			return fmt.Errorf("bundle failed with %d error(s)", len(result.Errors))
@@ -156,7 +177,7 @@ func (b *Bundle) Pack() error {
 
 		// Later, after build:
 		for path, importers := range warnedPackages {
-			slog.Warn(fmt.Sprintf("WARN! Node builtin %q used (from %v)\n", path, importers))
+			slog.Warn(fmt.Sprintf("Node builtin %q used (from %v)\n", path, importers))
 		}
 
 		elapsed := time.Since(start)
@@ -164,13 +185,13 @@ func (b *Bundle) Pack() error {
 	} else {
 		err = os.MkdirAll(filepath.Join(absDir, b.GetModuleDir()), 0755)
 		if err != nil {
-			slog.Error(fmt.Sprintf("✗ %v", err))
+			slog.Error(fmt.Sprintf("%v", err))
 			return fmt.Errorf("could not create module directory: %w", err)
 		}
 
 		err = copyDir(filepath.Dir(filepath.Join(absDir, modulePath)), filepath.Join(absDir, b.GetModuleDir()), []string{})
 		if err != nil {
-			slog.Error("✗ Could not copy module files", slog.Any("error", err))
+			slog.Error("Could not copy module files", slog.Any("error", err))
 			return fmt.Errorf("could not copy module files: %w", err)
 		}
 	}
@@ -186,14 +207,14 @@ func (b *Bundle) Pack() error {
 			modulePathDir := filepath.Join(absDir, filepath.Dir(modulePath))
 			err = copyDir(dir, b.GetAssetDir(), []string{modulePathDir})
 			if err != nil {
-				slog.Error(fmt.Sprintf("✗ %v", err))
+				slog.Error(fmt.Sprintf("%v", err))
 				return fmt.Errorf("could not copy assets: %w", err)
 			}
 
 			elapsed := time.Since(now)
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 		} else if !errors.Is(err, os.ErrNotExist) {
-			slog.Error(fmt.Sprintf("✗ %v", err))
+			slog.Error(fmt.Sprintf("%v", err))
 			return fmt.Errorf("could not stat assets directory: %w", err)
 		}
 	} else if utils.HasAssets(b.WranglerConfig) && b.AssetPath != "" {
@@ -205,14 +226,14 @@ func (b *Bundle) Pack() error {
 			err = copyDir(filepath.Join(absDir, strings.TrimPrefix(b.AssetPath, "/")), b.GetAssetDir(), []string{modulePathDir})
 
 			if err != nil {
-				slog.Error(fmt.Sprintf("✗ %v", err))
+				slog.Error(fmt.Sprintf("%v", err))
 				return fmt.Errorf("could not copy assets: %w", err)
 			}
 			elapsed := time.Since(now)
 			utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Assets copied in %s", elapsed))
 
 		} else if !errors.Is(err, os.ErrNotExist) {
-			slog.Error(fmt.Sprintf("✗ %v", err))
+			slog.Error(fmt.Sprintf("%v", err))
 			return fmt.Errorf("could not stat assets directory: %w", err)
 		}
 	}
@@ -223,35 +244,46 @@ func (b *Bundle) Pack() error {
 func (b *Bundle) RunBuildCommand() error {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
-		slog.Error(fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("%v", err))
 		return fmt.Errorf("could not resolve absolute path: %w", err)
 	}
 
-	customConfig := utils.IncludeCloudflareVitePlugin(absDir, b.PackageManager)
+	checks, err := utils.HasCloudflareVitePlugin(absDir)
+	if err == nil && checks != nil {
+		if !checks.HasDependency {
+			msg := "We couldn't find the @cloudflare/vite-plugin-cloudflare dependency in your package.json. Please install it."
+			slog.Warn(msg)
+		}
+		if !checks.IsPlugin {
+			msg := "we couldn't find the `@cloudflare/vite-plugin-cloudflare` plugin usage in your vite.config.js."
+			slog.Warn(msg)
+		}
+	}
 
 	cmdName := b.PackageManager + " run " + b.BuildScript
-
-	if customConfig != nil {
-		cmdName = fmt.Sprintf("%s --config %s", cmdName, *customConfig)
-	}
 
 	start := time.Now()
 	utils.LogWithColor(utils.Default, fmt.Sprintf("Running `%s`...", cmdName))
 	err = b.RunCommand(b.PackageManager, "run", b.BuildScript)
 
 	if err != nil {
-		slog.Error(fmt.Sprintf("✗ %v", err))
+		slog.Error(fmt.Sprintf("%v", err))
 		return fmt.Errorf("build command failed: %w", err)
 	}
 	elapsed := time.Since(start)
 	utils.LogWithColor(utils.Success, fmt.Sprintf("✓ Completed `%s` in %s", cmdName, elapsed))
 
-	outputDir := filepath.Join(absDir, b.findModuleDir())
+	outDir, err := b.findModuleDir()
+	if err != nil {
+		slog.Error(fmt.Sprintf("%v", err))
+		return err
+	}
+
+	outputDir := filepath.Join(absDir, *outDir)
 	if outputDir != "" {
 		wrangler, err := utils.DetectWranglerFile[utils.NormalizedWranglerConfig](&outputDir)
 		if err != nil {
-			slog.Error(fmt.Sprintf("✗ %v", err))
-			return err
+			return nil
 		}
 
 		b.BuildWranglerConfig = wrangler
@@ -260,11 +292,11 @@ func (b *Bundle) RunBuildCommand() error {
 	return nil
 }
 
-func (b *Bundle) findModuleDir() string {
+func (b *Bundle) findModuleDir() (*string, error) {
 	absDir, err := filepath.Abs(b.RootDir)
 	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+		slog.Error(fmt.Sprintf("%v", err))
+		return nil, err
 	}
 
 	mainDir := filepath.Dir(b.WranglerConfig.Main)
@@ -281,9 +313,16 @@ func (b *Bundle) findModuleDir() string {
 		var deployConfig struct {
 			ConfigPath string `json:"configPath"`
 		}
+
 		if json.Unmarshal(data, &deployConfig) == nil && deployConfig.ConfigPath != "" {
 			// Prepend the directory containing the generated config
-			generatedDir := filepath.Dir(filepath.Join(absDir, deployConfig.ConfigPath))
+			resolvedPath := filepath.Join(absDir, ".wrangler/deploy", deployConfig.ConfigPath)
+			generatedDir := filepath.Dir(resolvedPath)
+
+			if _, err := os.Stat(resolvedPath); err != nil {
+				slog.Error(fmt.Sprintf("There is a deploy configuration at `.wrangler/deploy/config.json`. But the redirected configuration path it points to, `%s`, does not exist.", deployConfig.ConfigPath))
+				return nil, err
+			}
 			paths = slices.Insert(paths, 0, generatedDir)
 		}
 	}
@@ -291,11 +330,11 @@ func (b *Bundle) findModuleDir() string {
 	for _, p := range paths {
 		pathWithAbsDir := filepath.Join(absDir, p)
 		if info, err := os.Stat(pathWithAbsDir); err == nil && info.IsDir() {
-			return p
+			return &p, nil
 		}
 	}
 
-	return mainDir
+	return &mainDir, nil
 }
 
 func (b *Bundle) RunExecutableCommand(args ...string) error {
