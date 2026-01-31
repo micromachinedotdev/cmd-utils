@@ -304,6 +304,7 @@ func (b *Bundle) findModuleDir() (*string, error) {
 	paths := []string{
 		"dist/server",
 		".output/server",
+		"dist/.micromachine",
 		mainDir,
 	}
 
