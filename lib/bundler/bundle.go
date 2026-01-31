@@ -302,9 +302,9 @@ func (b *Bundle) findModuleDir() (*string, error) {
 	mainDir := filepath.Dir(b.WranglerConfig.Main)
 
 	paths := []string{
-		mainDir,
 		"dist/server",
 		".output/server",
+		mainDir,
 	}
 
 	// Check for generated deployment config (from framework builds)
